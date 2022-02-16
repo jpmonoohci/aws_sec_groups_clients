@@ -27,6 +27,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Top = 37
     Width = 118
     Height = 21
+    Enabled = False
     EditMask = '00\.000\.000\/0000\-00;0;_'
     MaxLength = 18
     TabOrder = 0
@@ -38,6 +39,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Width = 75
     Height = 25
     Caption = 'Salvar'
+    Enabled = False
     TabOrder = 1
     OnClick = ButtonSalvarClick
   end
@@ -83,12 +85,5 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     OnTimer = Timer1Fired
     Left = 24
     Top = 40
-  end
-  object IdHTTPServer1: TIdHTTPServer
-    Bindings = <>
-    DefaultPort = 6000
-    OnCommandGet = IdHTTPServer1CommandGet
-    Left = 72
-    Top = 112
   end
 end

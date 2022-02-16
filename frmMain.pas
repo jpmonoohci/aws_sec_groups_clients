@@ -20,7 +20,6 @@ type
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
     ButtonAtualizacao: TButton;
-    IdHTTPServer1: TIdHTTPServer;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -38,8 +37,6 @@ type
     function AccessServerTest(CNPJ: String): String;
     function AccessServer(CNPJ: String; Hash: String): String;
     procedure ButtonTesteClick(Sender: TObject);
-    procedure IdHTTPServer1CommandGet(AContext: TIdContext;
-      ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
     procedure DoUpdateAccess();
 
   private
@@ -82,8 +79,6 @@ begin
 {$ENDIF}
   AppPath := ReadFromRegistry('AppPath');
 
-  // AppPath := 'c:\Users\jpmonoo\Documents\reps\hci_aws_sec_manager_clients\';
-
   if (AppPath.IsEmpty) then
   begin
     SaveToRegistry('AppPath', ExtractFilePath(Application.ExeName));
@@ -100,10 +95,6 @@ begin
   else
     AppVersion := AppVersionRegistry;
 
-  AppCNPJ := ReadFromRegistry('Numerocnpj');
-
-  MaskEdit1.Text := AppCNPJ;
-
   hashClient := ReadFromRegistry('hashClient');
 
   if (hashClient.IsEmpty) then
@@ -116,7 +107,7 @@ begin
   if not RunningAsService then
   else
   begin
-    Timer1.Interval := 5000;
+    Timer1.Interval := 10000;
     Timer1.Enabled := true;
   end;
 
@@ -124,9 +115,7 @@ end;
 
 procedure THCIAwsSecManCli.DoUpdateAccess();
 begin
-  AccessServer(ReadFromRegistry('Numerocnpj'), ReadFromRegistry('hashClient'));
-  DoUpdate();
-
+  AccessServer('', ReadFromRegistry('hashClient'));
 end;
 
 procedure THCIAwsSecManCli.Timer1Fired(Sender: TObject);
@@ -140,7 +129,7 @@ begin
 
     end;
   finally
-    Timer1.Interval := 5000;
+    Timer1.Interval := 10000;
     Timer1.Enabled := true;
   end;
 end;
@@ -199,7 +188,7 @@ end;
 
 procedure THCIAwsSecManCli.ButtonTesteClick(Sender: TObject);
 begin
-  AccessServerTest(ReadFromRegistry('Numerocnpj'));
+  AccessServerTest('');
 end;
 
 procedure THCIAwsSecManCli.DoUpdate();
@@ -306,18 +295,6 @@ begin
 
 end;
 
-procedure THCIAwsSecManCli.IdHTTPServer1CommandGet(AContext: TIdContext;
-  ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
-begin
-
-  try
-    AResponseInfo.ContentText := ReadFromRegistry('AppVersion');
-  except
-
-  end;
-
-end;
-
 function THCIAwsSecManCli.AccessServerTest(CNPJ: String): String;
 var
   lURL: String;
@@ -345,10 +322,10 @@ begin
       JSonValue.Free;
 
       if (RetornoChamada.Equals('true')) then
-        MessageDlg('Teste efetuado com sucesso. CNPJ é válido.', mtInformation,
+        MessageDlg('Teste efetuado com sucesso.', mtInformation,
           mbOKCancel, 0)
       else
-        MessageDlg('Teste falhou. CNPJ não é válido. [' + CNPJ + ']', mtError,
+        MessageDlg('Erro na execução do teste de conexão.', mtError,
           mbOKCancel, 0);
 
     except
@@ -374,8 +351,7 @@ begin
   lResponse := TStringStream.Create('');
   try
     try
-      lURL := URLServicoAWSSecMan + CNPJ + '/hash/' + Hash + '/version/' +
-        ReadFromRegistry('AppVersion');
+      lURL := URLServicoAWSSecMan + 'hash/' + Hash;
       IdHTTP1.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
@@ -595,24 +571,19 @@ end;
 
 initialization
 
+// Não usado para a HCI
 THCIAwsSecManCli.URLS3Version :=
-  'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/version.json';
-
+  '';
+// Não usado para a HCI
 THCIAwsSecManCli.URLS3Exe :=
-  'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/';
+  '';
 
 THCIAwsSecManCli.ExeName := 'HCIAwsSecManagerClients.exe';
 
 THCIAwsSecManCli.URLServicoAWSSecManTeste :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/cnpj/';
+  'https://awssecman.hci.app.br/Sy9wNW5yPX4kUG0a3ZCPjZDRDwQksqNCcqRlokQT8/testconn';
 
 THCIAwsSecManCli.URLServicoAWSSecMan :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/cnpj/';
-
-// 04076778000488
-
-// C:\Users\jpmonoo\Documents\reps\hci_aws_sec_manager_clients\Win32\Release
-
-// 33914971000449
+  'https://awssecman.hci.app.br/Sy9wNW5yPX4kUG0a3ZCPjZDRDwQksqNCcqRlokQT8/';
 
 end.
