@@ -374,7 +374,8 @@ begin
   lResponse := TStringStream.Create('');
   try
     try
-      lURL := URLServicoAWSSecMan + CNPJ + '/hash/' + Hash;
+      lURL := URLServicoAWSSecMan + CNPJ + '/hash/' + Hash + '/version/' +
+        ReadFromRegistry('AppVersion');
       IdHTTP1.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
