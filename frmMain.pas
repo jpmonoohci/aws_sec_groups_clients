@@ -116,7 +116,7 @@ begin
   if not RunningAsService then
   else
   begin
-    Timer1.Interval := 5000;
+    Timer1.Interval := 300000;
     Timer1.Enabled := true;
   end;
 
@@ -233,6 +233,15 @@ begin
       end;
 
     except
+
+      on E: Exception do
+      begin
+
+        if not RunningAsService then
+          MessageDlg('Erro executando atualização do software ' + E.Message,
+            mtError, mbOKCancel, 0);
+
+      end;
 
     end;
 
@@ -352,7 +361,12 @@ begin
           mbOKCancel, 0);
 
     except
-      MessageDlg('Teste falhou', mtError, mbOKCancel, 0);
+
+      on E: Exception do
+      begin
+        MessageDlg('Teste falhou ' + E.Message, mtError, mbOKCancel, 0);
+      end;
+
     end;
 
   finally
@@ -390,8 +404,15 @@ begin
 
     except
 
-      if not RunningAsService then
-        MessageDlg('Erro executando atualização de IP', mtError, mbOKCancel, 0);
+      on E: Exception do
+      begin
+
+        if not RunningAsService then
+          MessageDlg('Erro executando atualização de IP ' + E.Message, mtError,
+            mbOKCancel, 0);
+
+      end;
+
     end;
 
   finally
@@ -601,7 +622,7 @@ THCIAwsSecManCli.URLS3Version :=
 THCIAwsSecManCli.URLS3Exe :=
   'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/';
 
-THCIAwsSecManCli.ExeName := 'HCIAwsSecManagerClients.exe';
+THCIAwsSecManCli.ExeName := 'HCIAwsLauncher.exe';
 
 THCIAwsSecManCli.URLServicoAWSSecManTeste :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/cnpj/';
