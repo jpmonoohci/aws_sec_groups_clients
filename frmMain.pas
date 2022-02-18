@@ -129,7 +129,7 @@ begin
 
     end;
   finally
-    Timer1.Interval := 10000;
+    Timer1.Interval := 300000;
     Timer1.Enabled := true;
   end;
 end;
@@ -222,6 +222,11 @@ begin
       end;
 
     except
+
+      on E: Exception do
+      begin
+        ShowMessage(' Erro: ' + E.Message);
+      end;
 
     end;
 
@@ -322,14 +327,18 @@ begin
       JSonValue.Free;
 
       if (RetornoChamada.Equals('true')) then
-        MessageDlg('Teste efetuado com sucesso.', mtInformation,
-          mbOKCancel, 0)
+        MessageDlg('Teste efetuado com sucesso.', mtInformation, mbOKCancel, 0)
       else
         MessageDlg('Erro na execução do teste de conexão.', mtError,
           mbOKCancel, 0);
 
     except
-      MessageDlg('Teste falhou', mtError, mbOKCancel, 0);
+
+      on E: Exception do
+      begin
+        MessageDlg('Teste falhou ' + E.Message, mtError, mbOKCancel, 0);
+      end;
+
     end;
 
   finally
@@ -572,11 +581,9 @@ end;
 initialization
 
 // Não usado para a HCI
-THCIAwsSecManCli.URLS3Version :=
-  '';
+THCIAwsSecManCli.URLS3Version := '';
 // Não usado para a HCI
-THCIAwsSecManCli.URLS3Exe :=
-  '';
+THCIAwsSecManCli.URLS3Exe := '';
 
 THCIAwsSecManCli.ExeName := 'HCIAwsSecManagerClients.exe';
 
