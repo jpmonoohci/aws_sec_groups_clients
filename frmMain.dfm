@@ -84,11 +84,4 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 24
     Top = 40
   end
-  object IdHTTPServer1: TIdHTTPServer
-    Bindings = <>
-    DefaultPort = 6000
-    OnCommandGet = IdHTTPServer1CommandGet
-    Left = 72
-    Top = 112
-  end
 end

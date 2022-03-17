@@ -20,7 +20,6 @@ type
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
     ButtonAtualizacao: TButton;
-    IdHTTPServer1: TIdHTTPServer;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -116,7 +115,7 @@ begin
   if not RunningAsService then
   else
   begin
-    Timer1.Interval := 300000;
+    Timer1.Interval := 5000;
     Timer1.Enabled := true;
   end;
 
@@ -140,7 +139,7 @@ begin
 
     end;
   finally
-    Timer1.Interval := 5000;
+    Timer1.Interval := 300000;
     Timer1.Enabled := true;
   end;
 end;
