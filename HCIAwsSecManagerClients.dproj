@@ -105,6 +105,9 @@ $(PostBuildEvent)]]></PostBuildEvent>
         <DCC_GenerateStackFrames>true</DCC_GenerateStackFrames>
         <DCC_DebugInfoInExe>true</DCC_DebugInfoInExe>
         <DCC_RemoteDebug>true</DCC_RemoteDebug>
+        <PostBuildEvent><![CDATA[]]></PostBuildEvent>
+        <PreBuildEventCancelOnError>false</PreBuildEventCancelOnError>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
@@ -127,6 +130,8 @@ $(PostBuildEvent)]]></PostBuildEvent>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
         <AppEnableHighDPI>true</AppEnableHighDPI>
+        <VerInfo_IncludeVerInfo>true</VerInfo_IncludeVerInfo>
+        <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win64)'!=''">
         <AppEnableRuntimeThemes>true</AppEnableRuntimeThemes>
@@ -621,19 +626,19 @@ $(PostBuildEvent)]]></PostBuildEvent>
     <Import Project="$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj" Condition="Exists('$(APPDATA)\Embarcadero\$(BDSAPPDATABASEDIR)\$(PRODUCTVERSION)\UserTools.proj')"/>
     <Import Project="$(MSBuildProjectName).deployproj" Condition="Exists('$(MSBuildProjectName).deployproj')"/>
     <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win32'">
-        <PreBuildEvent>del $(OUTPUTPATH)&amp;&amp;del &quot;$(PROJECTDIR)\$(OUTPUTDIR)HCIAwsLauncher.exe&quot; </PreBuildEvent>
-        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreBuildEvent>del $(OUTPUTPATH)&amp;del &quot;$(PROJECTDIR)\$(OUTPUTDIR)HCIAwsLauncher.exe&quot; </PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>True</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>&quot;C:\Program Files (x86)\Windows Kits\10\bin\x86\signtool.exe&quot; sign /f &quot;C:\Users\jpmonoo\Documents\reps\hci-code-sign.pfx&quot; /p &quot;123456&quot; /d &quot;HCI Sistemas Integrados&quot; /du &quot;https://hci.com.br/&quot; /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as &quot;$(OUTPUTPATH)&quot;&amp;&amp;ren &quot;$(OUTPUTPATH)&quot; &quot;HCIAwsLauncher.exe&quot; </PostBuildEvent>
+        <PostBuildEvent/>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Debug' And '$(Platform)'=='Win64'">
-        <PreBuildEvent>del $(OUTPUTPATH)&amp;&amp;del &quot;$(PROJECTDIR)\$(OUTPUTDIR)HCIAwsLauncher.exe&quot; </PreBuildEvent>
-        <PreBuildEventIgnoreExitCode>False</PreBuildEventIgnoreExitCode>
+        <PreBuildEvent>del $(OUTPUTPATH)&amp;del &quot;$(PROJECTDIR)\$(OUTPUTDIR)HCIAwsLauncher.exe&quot; </PreBuildEvent>
+        <PreBuildEventIgnoreExitCode>True</PreBuildEventIgnoreExitCode>
         <PreLinkEvent/>
         <PreLinkEventIgnoreExitCode>False</PreLinkEventIgnoreExitCode>
-        <PostBuildEvent>&quot;C:\Program Files (x86)\Windows Kits\10\bin\x86\signtool.exe&quot; sign /f &quot;C:\Users\jpmonoo\Documents\reps\hci-code-sign.pfx&quot; /p &quot;123456&quot; /d &quot;HCI Sistemas Integrados&quot; /du &quot;https://hci.com.br/&quot; /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as &quot;$(OUTPUTPATH)&quot;&amp;&amp;ren &quot;$(OUTPUTPATH)&quot; &quot;HCIAwsLauncher.exe&quot; </PostBuildEvent>
+        <PostBuildEvent/>
         <PostBuildEventIgnoreExitCode>False</PostBuildEventIgnoreExitCode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Config)'=='Release' And '$(Platform)'=='Win32'">

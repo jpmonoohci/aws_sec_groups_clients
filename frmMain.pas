@@ -9,7 +9,7 @@ uses
   IdBaseComponent, IdComponent, IdCustomTCPServer, IdHTTPServer, Server.Runner,
   Vcl.StdCtrls, IdTCPConnection, IdTCPClient, IdHTTP, IdAuthentication,
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
-  System.JSON;
+  System.JSON, Vcl.ComCtrls, IniFiles;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -20,14 +20,29 @@ type
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
     ButtonAtualizacao: TButton;
+    StatusBar1: TStatusBar;
+    PageControl1: TPageControl;
+    TabSheet1: TTabSheet;
+    TabSheet2: TTabSheet;
+    TabSheet3: TTabSheet;
+    ListBoxUser: TListBox;
+    ButtonLogin: TButton;
+    Button2: TButton;
+    ButtonListUsers: TButton;
+    EditUserName: TEdit;
+    StaticText1: TStaticText;
+    StaticText2: TStaticText;
+    EditServer: TEdit;
+    EditToken: TEdit;
+    StaticText3: TStaticText;
+    ButtonSalvarToken: TButton;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
     procedure DoUpdate();
     procedure Timer1Fired(Sender: TObject);
     procedure ButtonSalvarClick(Sender: TObject);
-    procedure SaveToRegistry(keyToSave: string; valueToSave: string);
-    function ReadFromRegistry(KeyName: string): string;
+
     function isCNPJ(CNPJ: string): boolean;
     function MD5(const texto: string): string;
     function DateTimeToStrUs(dt: TDatetime): string;
@@ -37,18 +52,21 @@ type
     function AccessServerTest(CNPJ: String): String;
     function AccessServer(CNPJ: String; Hash: String): String;
     procedure ButtonTesteClick(Sender: TObject);
-    procedure IdHTTPServer1CommandGet(AContext: TIdContext;
-      ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
     procedure DoUpdateAccess();
+    procedure ListUsers();
+    procedure ButtonListUsersClick(Sender: TObject);
+
+    procedure GravaIni(Secao: String; Chave: String; Valor: String);
+
+    function LeIni(Secao: String; Chave: String): String;
 
   private
 
   public
-    class var RegistryKey: String;
-    class var RegistryKeyToRead: String;
     class var AppVersion: String;
     class var AppPath: String;
-    class var AppCNPJ: String;
+    class var AppToken: String;
+    class var AppIniFile: String;
     class var URLS3Version: String;
     class var URLS3Exe: String;
     class var ExeName: String;
@@ -68,48 +86,37 @@ procedure THCIAwsSecManCli.FormCreate(ASender: TObject);
 var
   hashClient: string;
   timeStamp: string;
-  AppVersionRegistry: string;
+  AppVersionTemp: string;
+
 begin
 
-  RegistryKey := 'SOFTWARE\HCISISTEMAS\AWSSECMAN\';
+  AppPath := LeIni('Config', 'AppPath');
 
-{$IFDEF WIN32}
-  RegistryKeyToRead := 'SOFTWARE\WOW6432Node\HCISISTEMAS\AWSSECMAN';
-{$ENDIF$}
-{$IFDEF WIN64}
-  RegistryKeyToRead := RegistryKey;
-{$ENDIF}
-  AppPath := ReadFromRegistry('AppPath');
-
-  // AppPath := 'c:\Users\jpmonoo\Documents\reps\hci_aws_sec_manager_clients\';
-
-  if (AppPath.IsEmpty) then
+  if (AppPath.equals('error')) then
   begin
-    SaveToRegistry('AppPath', ExtractFilePath(Application.ExeName));
+    GravaIni('Config', 'AppPath', ExtractFilePath(Application.ExeName));
     AppPath := ExtractFilePath(Application.ExeName);
   end;
 
-  AppVersionRegistry := ReadFromRegistry('AppVersion');
+  AppVersionTemp := LeIni('Config', 'AppVersion');
 
-  if (AppVersionRegistry.IsEmpty) then
+  if (AppVersionTemp.equals('error')) then
   begin
-    SaveToRegistry('AppVersion', '0');
+    GravaIni('Config', 'AppVersion', '0');
     AppVersion := '0';
   end
   else
-    AppVersion := AppVersionRegistry;
+    AppVersion := AppVersionTemp;
 
-  AppCNPJ := ReadFromRegistry('Numerocnpj');
+  AppToken := LeIni('Config', 'Token');
 
-  MaskEdit1.Text := AppCNPJ;
+  hashClient := LeIni('Config', 'hashClient');
 
-  hashClient := ReadFromRegistry('hashClient');
-
-  if (hashClient.IsEmpty) then
+  if (hashClient.equals('error')) then
   begin
     timeStamp := DateTimeToStrUs(now);
     hashClient := MD5(timeStamp);
-    SaveToRegistry('hashClient', hashClient);
+    GravaIni('Config', 'hashClient', hashClient);
   end;
 
   if not RunningAsService then
@@ -123,7 +130,7 @@ end;
 
 procedure THCIAwsSecManCli.DoUpdateAccess();
 begin
-  AccessServer(ReadFromRegistry('Numerocnpj'), ReadFromRegistry('hashClient'));
+  AccessServer(LeIni('Config', 'Numerocnpj'), LeIni('Config', 'hashClient'));
   DoUpdate();
 
 end;
@@ -144,6 +151,70 @@ begin
   end;
 end;
 
+procedure THCIAwsSecManCli.ListUsers();
+
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  JSonUserValue: TJSonValue;
+  JSonObject: TJSonObject;
+  RemoteVersion: String;
+  Resultado: String;
+  i: Integer;
+  UserName: String;
+begin
+  lResponse := TStringStream.Create('');
+  JSonObject := TJSonObject.Create;
+
+  ListBoxUser.Clear;
+
+  try
+    try
+
+      lURL := 'http://sistema.hci.com.br:9998/ListUsers';
+      IdHTTP1.Request.CustomHeaders.AddValue('Authorization',
+        'Basic dXNlcjpRVzVoT0ZNdVdUUkhLVEluWG1JK1VRPT0=');
+      IdHTTP1.Get(lURL, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := JSonObject.ParseJSONValue(Resposta);
+
+      Resultado := (JSonValue as TJSonObject).Get('result').JSonValue.Value;
+
+      if Resultado.Equals('ok') then
+      begin
+
+        JSonValue := (JSonValue as TJSonObject).Get('users').JSonValue;
+        if (JSonValue is TJSONArray) then
+
+          for i := 0 to (JSonValue as TJSONArray).Count - 1 do
+          begin
+            JSonUserValue :=
+              ((JSonValue as TJSONArray).Items[i] as TJSonObject);
+
+            UserName := JSonUserValue.GetValue<string>('nome');
+
+            ListBoxUser.Items.Add(UserName);
+
+          end;
+
+      end;
+
+    except
+
+    end;
+
+  finally
+    lResponse.Free();
+    JSonObject.Free;
+
+  end;
+
+end;
+
 procedure THCIAwsSecManCli.ButtonAtualizacaoClick(Sender: TObject);
 begin
 
@@ -154,6 +225,24 @@ begin
 
   if not RunningAsService then
     Screen.Cursor := crDefault;
+end;
+
+procedure THCIAwsSecManCli.ButtonListUsersClick(Sender: TObject);
+begin
+
+  ButtonListUsers.Enabled := false;
+  Screen.Cursor := crHourglass;
+
+  StatusBar1.Panels[0].Text := 'Por favor, aguarde, buscando usuários';
+
+  Application.ProcessMessages;
+
+  ListUsers();
+
+  StatusBar1.Panels[0].Text := '';
+
+  ButtonListUsers.Enabled := true;
+  Screen.Cursor := crDefault;
 end;
 
 procedure THCIAwsSecManCli.ButtonSalvarClick(Sender: TObject);
@@ -177,28 +266,13 @@ begin
     Exit();
   end;
 
-  SaveToRegistry('Numerocnpj', CpnjDigitado);
-
-  CpnjSalvo := ReadFromRegistry('Numerocnpj');
-
-  if not(CpnjSalvo.Equals(CpnjDigitado)) then
-  begin
-    MessageDlg('Não foi possivel salvar a chave no registro. [' + CpnjDigitado +
-      ']', mtError, mbOKCancel, 0);
-    Exit();
-  end
-  else
-  begin
-    MessageDlg('CNPJ salvo com sucesso no registro.', mtInformation,
-      mbOKCancel, 0);
-    Exit();
-  end;
+  GravaIni('Config', 'Numerocnpj', CpnjDigitado);
 
 end;
 
 procedure THCIAwsSecManCli.ButtonTesteClick(Sender: TObject);
 begin
-  AccessServerTest(ReadFromRegistry('Numerocnpj'));
+  // AccessServerTest(ReadFromRegistry('Numerocnpj'));
 end;
 
 procedure THCIAwsSecManCli.DoUpdate();
@@ -222,7 +296,7 @@ begin
 
           AppVersion := RemoteVersion;
 
-          SaveToRegistry('AppVersion', AppVersion);
+          // SaveToRegistry('AppVersion', AppVersion);
 
           if RunningAsService then
             RunCommand('powershell.exe',
@@ -314,18 +388,6 @@ begin
 
 end;
 
-procedure THCIAwsSecManCli.IdHTTPServer1CommandGet(AContext: TIdContext;
-  ARequestInfo: TIdHTTPRequestInfo; AResponseInfo: TIdHTTPResponseInfo);
-begin
-
-  try
-    AResponseInfo.ContentText := ReadFromRegistry('AppVersion');
-  except
-
-  end;
-
-end;
-
 function THCIAwsSecManCli.AccessServerTest(CNPJ: String): String;
 var
   lURL: String;
@@ -388,7 +450,7 @@ begin
   try
     try
       lURL := URLServicoAWSSecMan + CNPJ + '/hash/' + Hash + '/version/' +
-        ReadFromRegistry('AppVersion');
+        LeIni('Config', 'AppVersion');
       IdHTTP1.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
@@ -424,6 +486,36 @@ end;
 
 // ####################################################################################
 
+procedure THCIAwsSecManCli.GravaIni(Secao: String; Chave: String;
+  Valor: String);
+var
+  ArquivoINI: TIniFile;
+begin
+
+  ArquivoINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + '\' +
+    AppIniFile);
+  ArquivoINI.WriteString(Secao, Chave, Valor);
+
+  ArquivoINI.Free;
+
+end;
+
+function THCIAwsSecManCli.LeIni(Secao: String; Chave: String): String;
+var
+  ArquivoINI: TIniFile;
+var
+  retorno: string;
+begin
+
+  ArquivoINI := TIniFile.Create(ExtractFilePath(Application.ExeName) + '\' +
+    AppIniFile);
+  retorno := ArquivoINI.ReadString(Secao, Chave, 'error');
+  ArquivoINI.Free;
+
+  Result := retorno;
+
+end;
+
 function THCIAwsSecManCli.RunCommand(const ACommand,
   AParameters: String): String;
 const
@@ -437,9 +529,9 @@ var
   pBuffer: array [0 .. CReadBuffer] of AnsiChar;
   dRead: DWord;
   dRunning: DWord;
-  Retorno: String;
+  retorno: String;
 begin
-  Retorno := '';
+  retorno := '';
   saSecurity.nLength := SizeOf(TSecurityAttributes);
   saSecurity.bInheritHandle := true;
   saSecurity.lpSecurityDescriptor := nil;
@@ -467,7 +559,7 @@ begin
           pBuffer[dRead] := #0;
 
           OemToAnsi(pBuffer, pBuffer);
-          Retorno := Retorno + String(pBuffer);
+          retorno := retorno + String(pBuffer);
         until (dRead < CReadBuffer);
       until (dRunning <> WAIT_TIMEOUT);
       CloseHandle(piProcess.hProcess);
@@ -477,48 +569,8 @@ begin
     CloseHandle(hRead);
     CloseHandle(hWrite);
 
-    Result := Retorno;
+    Result := retorno;
   end;
-end;
-
-procedure THCIAwsSecManCli.SaveToRegistry(keyToSave: string;
-  valueToSave: string);
-var
-  Reg: TRegistry;
-begin
-  Reg := TRegistry.Create;
-  try
-    { Define a chave-raiz do registro }
-    Reg.RootKey := HKEY_LOCAL_MACHINE;
-    { Abre a chave (path). Se não existir, cria e abre. }
-    Reg.OpenKey(RegistryKey, true);
-    { Escreve uma string }
-    Reg.WriteString(keyToSave, valueToSave);
-
-  finally
-    Reg.Free;
-  end;
-end;
-
-function THCIAwsSecManCli.ReadFromRegistry(KeyName: string): string;
-var
-  Reg: TRegistry;
-begin
-  Reg := TRegistry.Create;
-  try
-    Reg.RootKey := HKEY_LOCAL_MACHINE;
-    if Reg.KeyExists(RegistryKey) then
-    begin
-      Reg.OpenKey(RegistryKey, false);
-
-      if Reg.ValueExists(KeyName) then
-        Result := Reg.ReadString(KeyName);
-
-    end
-  finally
-    Reg.Free;
-  end;
-
 end;
 
 function THCIAwsSecManCli.isCNPJ(CNPJ: string): boolean;
@@ -614,6 +666,8 @@ begin
 end;
 
 initialization
+
+THCIAwsSecManCli.AppIniFile := 'hciconfig.ini';
 
 THCIAwsSecManCli.URLS3Version :=
   'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/version.json';
