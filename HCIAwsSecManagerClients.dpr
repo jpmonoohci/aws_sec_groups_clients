@@ -1,12 +1,8 @@
 program HCIAwsSecManagerClients;
 
-
-
 uses
   Vcl.Forms,
-  Service in 'Service.pas' {srvService: TService},
-  frmMain in 'frmMain.pas' {HCIAwsSecManCli},
-  Server.Runner in 'Server.Runner.pas';
+  frmMain in 'frmMain.pas' {HCIAwsSecManCli};
 
 {$R *.res}
 
@@ -14,7 +10,11 @@ begin
   Application.Initialize;
   Application.MainFormOnTaskbar := True;
   Application.CreateForm(THCIAwsSecManCli, HCIAwsSecManCli);
-  Application.CreateForm(TsrvService, srvService);
-  ;
+  HCIAwsSecManCli.Show;
+
+  if (not HCIAwsSecManCli.VerifyUpdateAvailable()) then
+    HCIAwsSecManCli.VerifyStatusServerSemToken();
+
   Application.Run;
+
 end.

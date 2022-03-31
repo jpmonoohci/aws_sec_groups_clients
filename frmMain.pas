@@ -9,7 +9,9 @@ uses
   IdBaseComponent, IdComponent, IdCustomTCPServer, IdHTTPServer, Server.Runner,
   Vcl.StdCtrls, IdTCPConnection, IdTCPClient, IdHTTP, IdAuthentication,
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
-  System.JSON, Vcl.ComCtrls, IniFiles;
+  System.JSON, Vcl.ComCtrls, IniFiles, Vcl.Imaging.pngimage, Vcl.Imaging.jpeg,
+  ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
+  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -36,29 +38,51 @@ type
     EditToken: TEdit;
     StaticText3: TStaticText;
     ButtonSalvarToken: TButton;
+    ButtonTestarToken: TButton;
+    ButtonLigarServer: TButton;
+    ButtonAtualizarStatusServer: TButton;
+    Image1: TImage;
+    StaticText4: TStaticText;
+    EditVersion: TEdit;
+    ButtonLoginWeb: TButton;
+    IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL;
+    PopupMenu1: TPopupMenu;
+    DesconectarUsurio1: TMenuItem;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
-    procedure DoUpdate();
+    function VerifyUpdateAvailable(): Boolean;
     procedure Timer1Fired(Sender: TObject);
-    procedure ButtonSalvarClick(Sender: TObject);
 
-    function isCNPJ(CNPJ: string): boolean;
+    function isCNPJ(CNPJ: string): Boolean;
     function MD5(const texto: string): string;
     function DateTimeToStrUs(dt: TDatetime): string;
-    procedure ButtonAtualizacaoClick(Sender: TObject);
-    function DownloadUpdate(RemoteVersion: String): boolean;
+
+    function DownloadUpdate(RemoteVersion: String): Boolean;
     function RunCommand(const ACommand, AParameters: String): String;
-    function AccessServerTest(CNPJ: String): String;
-    function AccessServer(CNPJ: String; Hash: String): String;
-    procedure ButtonTesteClick(Sender: TObject);
-    procedure DoUpdateAccess();
-    procedure ListUsers();
+    function AccessServerTest(Token: String): String;
+    function AccessServer(Token: String; Hash: String): String;
+
+    function StartServer(Token: String): String;
+    function VerifyStatusServer(Token: String): String;
+    function VerifyStatusServerSemToken(): String;
+
+    procedure ListServerUsers();
     procedure ButtonListUsersClick(Sender: TObject);
 
     procedure GravaIni(Secao: String; Chave: String; Valor: String);
 
     function LeIni(Secao: String; Chave: String): String;
+    procedure ButtonLoginClick(Sender: TObject);
+    procedure ButtonTokenSalvarClick(Sender: TObject);
+    procedure ButtonTestarTokenClick(Sender: TObject);
+    procedure ButtonLigarServerClick(Sender: TObject);
+    procedure ButtonAtualizarStatusServerClick(Sender: TObject);
+    procedure ListBoxUserDblClick(Sender: TObject);
+    procedure ButtonLoginWebClick(Sender: TObject);
+    procedure ListBoxUserMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure DesconectarUsurio1Click(Sender: TObject);
 
   private
 
@@ -68,10 +92,17 @@ type
     class var AppToken: String;
     class var AppIniFile: String;
     class var URLS3Version: String;
-    class var URLS3Exe: String;
+    class var URLS3Root: String;
     class var ExeName: String;
     class var URLServicoAWSSecManTeste: String;
     class var URLServicoAWSSecMan: String;
+    class var URLServicoStartServer: String;
+    class var URLServicoStatusServer: String;
+    class var ServerIP: String;
+    class var TimeoutConexao: Integer;
+    class var TimeoutLeitura: Integer;
+    class var UpdatePackageName: String;
+    class var ListUserBoxSelectedItem: String;
 
   end;
 
@@ -86,9 +117,12 @@ procedure THCIAwsSecManCli.FormCreate(ASender: TObject);
 var
   hashClient: string;
   timeStamp: string;
-  AppVersionTemp: string;
+  Username: string;
+  Token: string;
 
 begin
+
+  EditVersion.Text := AppVersion;
 
   AppPath := LeIni('Config', 'AppPath');
 
@@ -98,60 +132,110 @@ begin
     AppPath := ExtractFilePath(Application.ExeName);
   end;
 
-  AppVersionTemp := LeIni('Config', 'AppVersion');
-
-  if (AppVersionTemp.equals('error')) then
-  begin
-    GravaIni('Config', 'AppVersion', '0');
-    AppVersion := '0';
-  end
-  else
-    AppVersion := AppVersionTemp;
-
   AppToken := LeIni('Config', 'Token');
 
-  hashClient := LeIni('Config', 'hashClient');
+  hashClient := LeIni('Config', 'HashClient');
 
   if (hashClient.equals('error')) then
   begin
     timeStamp := DateTimeToStrUs(now);
     hashClient := MD5(timeStamp);
-    GravaIni('Config', 'hashClient', hashClient);
+    GravaIni('Config', 'HashClient', hashClient);
   end;
 
-  if not RunningAsService then
+  Username := LeIni('Config', 'Username');
+
+  if (not Username.equals('error')) then
+  begin
+    EditUserName.Text := Username;
+  end;
+
+  Token := LeIni('Config', 'Token');
+
+  if (not Token.equals('error')) then
+  begin
+    EditToken.Text := Token;
+
+    PageControl1.Pages[0].Enabled := true;
+    PageControl1.Pages[1].Enabled := true;
+    PageControl1.ActivePageIndex := 0;
+
+  end
   else
   begin
-    Timer1.Interval := 5000;
-    Timer1.Enabled := true;
+    PageControl1.Pages[0].Enabled := false;
+    PageControl1.Pages[1].Enabled := false;
+    PageControl1.ActivePageIndex := 2;
   end;
 
-end;
-
-procedure THCIAwsSecManCli.DoUpdateAccess();
-begin
-  AccessServer(LeIni('Config', 'Numerocnpj'), LeIni('Config', 'hashClient'));
-  DoUpdate();
+  PageControl1.Pages[1].TabVisible := true;
 
 end;
 
 procedure THCIAwsSecManCli.Timer1Fired(Sender: TObject);
+var
+  Token: String;
+  StatusServer: String;
 
 begin
   Timer1.Enabled := false;
   try
     try
-      DoUpdateAccess();
+
+      Token := LeIni('Config', 'Token');
+
+      if (not Token.Trim.IsEmpty) then
+      begin
+        VerifyStatusServer(Token);
+        StatusServer := EditServer.Text;
+
+        if (StatusServer.equals('Ligando')) then
+        begin
+          Timer1.Enabled := true;
+        end;
+      end;
     except
 
     end;
-  finally
-    Timer1.Interval := 300000;
+  except
     Timer1.Enabled := true;
   end;
 end;
 
-procedure THCIAwsSecManCli.ListUsers();
+procedure THCIAwsSecManCli.ListBoxUserDblClick(Sender: TObject);
+begin
+  EditUserName.Text := ListBoxUser.Items[ListBoxUser.ItemIndex];
+  PageControl1.ActivePageIndex := 0;
+end;
+
+procedure THCIAwsSecManCli.ListBoxUserMouseDown(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+var
+  I: Integer;
+  PopupPos: TPoint;
+begin
+  inherited;
+  if (Button = mbRight) then
+  begin
+    I := ListBoxUser.ItemAtPos(Point(X, Y), true);
+
+    ListBoxUser.ItemIndex := I;
+
+    if (I >= 0) then
+    begin
+
+      ListUserBoxSelectedItem := ListBoxUser.Items.Strings
+        [ListBoxUser.ItemIndex];
+
+      PopupPos := ListBoxUser.ClientToScreen(Point(X, Y));
+
+      PopupMenu1.Popup(PopupPos.X, PopupPos.Y);
+
+    end;
+  end;
+end;
+
+procedure THCIAwsSecManCli.ListServerUsers();
 
 var
   lURL: String;
@@ -160,10 +244,12 @@ var
   JSonValue: TJSonValue;
   JSonUserValue: TJSonValue;
   JSonObject: TJSonObject;
-  RemoteVersion: String;
   Resultado: String;
-  i: Integer;
-  UserName: String;
+  I: Integer;
+  Username: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+
 begin
   lResponse := TStringStream.Create('');
   JSonObject := TJSonObject.Create;
@@ -173,10 +259,28 @@ begin
   try
     try
 
+      StatusBar1.Panels[0].Text := 'Por favor aguarde, buscando usuários';
+      Application.ProcessMessages;
+
+      lURL := 'http://' + ServerIP + ':9998/ListUsers';
       lURL := 'http://sistema.hci.com.br:9998/ListUsers';
-      IdHTTP1.Request.CustomHeaders.AddValue('Authorization',
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.Request.CustomHeaders.AddValue('Authorization',
         'Basic dXNlcjpRVzVoT0ZNdVdUUkhLVEluWG1JK1VRPT0=');
-      IdHTTP1.Get(lURL, lResponse);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -184,47 +288,102 @@ begin
 
       Resultado := (JSonValue as TJSonObject).Get('result').JSonValue.Value;
 
-      if Resultado.Equals('ok') then
+      if Resultado.equals('ok') then
       begin
 
         JSonValue := (JSonValue as TJSonObject).Get('users').JSonValue;
         if (JSonValue is TJSONArray) then
 
-          for i := 0 to (JSonValue as TJSONArray).Count - 1 do
+          for I := 0 to (JSonValue as TJSONArray).Count - 1 do
           begin
             JSonUserValue :=
-              ((JSonValue as TJSONArray).Items[i] as TJSonObject);
+              ((JSonValue as TJSONArray).Items[I] as TJSonObject);
 
-            UserName := JSonUserValue.GetValue<string>('nome');
+            Username := JSonUserValue.GetValue<string>('nome');
 
-            ListBoxUser.Items.Add(UserName);
+            ListBoxUser.Items.Add(Username);
 
           end;
+
+        StatusBar1.Panels[0].Text := 'Listagem de usuários completa.';
+        Application.ProcessMessages;
 
       end;
 
     except
 
+      StatusBar1.Panels[0].Text := 'Erro buscando usuários';
+      Application.ProcessMessages;
     end;
 
   finally
     lResponse.Free();
     JSonObject.Free;
 
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
   end;
 
 end;
 
-procedure THCIAwsSecManCli.ButtonAtualizacaoClick(Sender: TObject);
+procedure THCIAwsSecManCli.ButtonTestarTokenClick(Sender: TObject);
+var
+  Token: String;
 begin
 
-  if not RunningAsService then
-    Screen.Cursor := crHourglass;
+  Token := LeIni('Config', 'Token');
 
-  DoUpdateAccess();
+  if (Token.Trim.IsEmpty) then
+  begin
+    MessageDlg('Digite o Token e clique em Salvar.', mtError, [mbOk], 0);
+    Exit();
+  end;
 
-  if not RunningAsService then
-    Screen.Cursor := crDefault;
+  AccessServerTest(Token);
+
+  VerifyStatusServer(Token);
+
+end;
+
+procedure THCIAwsSecManCli.ButtonAtualizarStatusServerClick(Sender: TObject);
+
+var
+  Token: string;
+begin
+
+  Token := LeIni('Config', 'Token');
+
+  if (not Token.equals('error')) then
+  begin
+
+    ButtonAtualizarStatusServer.Enabled := false;
+
+    VerifyStatusServer(Token);
+
+    ButtonAtualizarStatusServer.Enabled := true;
+
+  end
+
+end;
+
+procedure THCIAwsSecManCli.ButtonLigarServerClick(Sender: TObject);
+
+var
+  Token: string;
+begin
+
+  Token := LeIni('Config', 'Token');
+
+  if (not Token.equals('error')) then
+  begin
+
+    ButtonLigarServer.Enabled := false;
+    StartServer(Token);
+
+  end
+
 end;
 
 procedure THCIAwsSecManCli.ButtonListUsersClick(Sender: TObject);
@@ -233,86 +392,335 @@ begin
   ButtonListUsers.Enabled := false;
   Screen.Cursor := crHourglass;
 
-  StatusBar1.Panels[0].Text := 'Por favor, aguarde, buscando usuários';
-
-  Application.ProcessMessages;
-
-  ListUsers();
-
-  StatusBar1.Panels[0].Text := '';
+  ListServerUsers();
 
   ButtonListUsers.Enabled := true;
   Screen.Cursor := crDefault;
 end;
 
-procedure THCIAwsSecManCli.ButtonSalvarClick(Sender: TObject);
+procedure THCIAwsSecManCli.ButtonLoginClick(Sender: TObject);
 var
-  CpnjDigitado: String;
-  CpnjSalvo: String;
+  Username: String;
+  Password: String;
+  Server: String;
+  ServerStatus: String;
+  Token: String;
+  hashClient: String;
+  CommandLines: TStringlist;
+  RDPLines: TStringlist;
+  PowershellCommand: String;
 begin
 
-  CpnjDigitado := MaskEdit1.Text;
+  Server := ServerIP;
+  Server := 'aws18.hci.com.br';
 
-  if (CpnjDigitado.Trim.IsEmpty) then
+  Username := EditUserName.Text;
+  Username := 'administrator';
+  Username := 'user005.plasbarra';
+
+  Password := '0101';
+  // Password := '@hci1936%';
+
+  if (Username.Trim.IsEmpty) then
   begin
-    MessageDlg('Digite o CNPJ e clique em Salvar', mtError, mbOKCancel, 0);
+    MessageDlg('Digite o Username e clique em Executar HCI.', mtError,
+      [mbOk], 0);
     Exit();
   end;
 
-  if not(isCNPJ(CpnjDigitado.Trim)) then
+  GravaIni('Config', 'Username', Username.Trim);
+
+  ServerStatus := EditServer.Text;
+
+  if (not ServerStatus.equals('Ligado')) then
   begin
-    MessageDlg('Digite um CNPJ valido e clique em Salvar', mtError,
-      mbOKCancel, 0);
+    MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
     Exit();
   end;
 
-  GravaIni('Config', 'Numerocnpj', CpnjDigitado);
+  Token := LeIni('Config', 'Token');
+  hashClient := LeIni('Config', 'HashClient');
+
+  if (not Token.equals('error')) then
+  begin
+    AccessServer(Token, hashClient);
+  end
+  else
+  begin
+    MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  CommandLines := TStringlist.Create;
+  RDPLines := TStringlist.Create;
+  try
+
+    CommandLines.Add('param($username, $password, $servername)');
+    CommandLines.Add('write-output "Connecting to $servername"');
+    CommandLines.Add('cmdkey /delete:"$servername"');
+    CommandLines.Add
+      ('cmdkey /generic:"$servername" /User: "$username" /pass: "$password"');
+
+    CommandLines.Add('mstsc /v:"$servername" ' + AppPath + '\server.rdp /f');
+
+    CommandLines.SaveToFile(AppPath + 'server.ps1');
+
+    RDPLines.Add('screen mode id:i:2');
+    RDPLines.Add('use multimon:i:0');
+    RDPLines.Add('desktopwidth:i:1920');
+    RDPLines.Add('desktopheight:i:1080');
+    RDPLines.Add('session bpp:i:32');
+    RDPLines.Add('winposstr:s:0,1,0,0,864,669');
+    RDPLines.Add('compression:i:1');
+    RDPLines.Add('keyboardhook:i:2');
+    RDPLines.Add('audiocapturemode:i:0');
+    RDPLines.Add('videoplaybackmode:i:1');
+    RDPLines.Add('connection type:i:7');
+    RDPLines.Add('networkautodetect:i:1');
+    RDPLines.Add('bandwidthautodetect:i:1');
+    RDPLines.Add('displayconnectionbar:i:0');
+    RDPLines.Add('enableworkspacereconnect:i:0');
+    RDPLines.Add('disable wallpaper:i:0');
+    RDPLines.Add('allow font smoothing:i:0');
+    RDPLines.Add('allow desktop composition:i:0');
+    RDPLines.Add('disable full window drag:i:1');
+    RDPLines.Add('disable menu anims:i:1');
+    RDPLines.Add('disable themes:i:0');
+    RDPLines.Add('disable cursor setting:i:0');
+    RDPLines.Add('bitmapcachepersistenable:i:1');
+    RDPLines.Add('audiomode:i:0');
+    RDPLines.Add('redirectprinters:i:1');
+    RDPLines.Add('redirectlocation:i:1');
+    RDPLines.Add('redirectcomports:i:1');
+    RDPLines.Add('redirectsmartcards:i:1');
+    RDPLines.Add('redirectclipboard:i:1');
+    RDPLines.Add('redirectposdevices:i:0');
+    RDPLines.Add('autoreconnection enabled:i:1');
+    RDPLines.Add('authentication level:i:0');
+    RDPLines.Add('prompt for credentials:i:0');
+    RDPLines.Add('negotiate security layer:i:1');
+    RDPLines.Add('remoteapplicationmode:i:0');
+    RDPLines.Add('alternate shell:s:');
+    RDPLines.Add('shell working directory:s:');
+    RDPLines.Add('gatewayhostname:s:');
+    RDPLines.Add('gatewayusagemethod:i:4');
+    RDPLines.Add('gatewaycredentialssource:i:4');
+    RDPLines.Add('gatewayprofileusagemethod:i:0');
+    RDPLines.Add('promptcredentialonce:i:0');
+    RDPLines.Add('gatewaybrokeringtype:i:0');
+    RDPLines.Add('use redirection server name:i:0');
+    RDPLines.Add('rdgiskdcproxy:i:0');
+    RDPLines.Add('kdcproxyname:s:');
+    RDPLines.Add('drivestoredirect:s:*');
+    RDPLines.Add('camerastoredirect:s:*');
+    RDPLines.Add('devicestoredirect:s:*');
+    RDPLines.Add('full address:s:');
+
+    RDPLines.SaveToFile(AppPath + 'server.rdp');
+
+    PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted ' +
+      AppPath + '\server.ps1 -username ' + QuotedStr(Username) + ' -password ' +
+      QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
+
+    RunCommand('powershell.exe', PowershellCommand);
+
+  finally
+
+    CommandLines.Free;
+    RDPLines.Free;
+
+  end;
 
 end;
 
-procedure THCIAwsSecManCli.ButtonTesteClick(Sender: TObject);
+procedure THCIAwsSecManCli.ButtonLoginWebClick(Sender: TObject);
+var
+  URL: string;
+  Server: string;
+  Username: string;
+  ServerStatus: string;
+  Token: string;
+  hashClient: string;
+  Password: string;
 begin
-  // AccessServerTest(ReadFromRegistry('Numerocnpj'));
+
+  Server := ServerIP;
+  Server := 'aws18.hci.com.br';
+
+  Username := EditUserName.Text;
+  Username := 'administrator';
+  Username := 'user005.plasbarra';
+
+  Password := '0101';
+  // Password := '@hci1936%';
+
+  if (Username.Trim.IsEmpty) then
+  begin
+    MessageDlg('Digite o Username e clique em Executar HCI.', mtError,
+      [mbOk], 0);
+    Exit();
+  end;
+
+  GravaIni('Config', 'Username', Username.Trim);
+
+  ServerStatus := EditServer.Text;
+
+  if (not ServerStatus.equals('Ligado')) then
+  begin
+    MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  Token := LeIni('Config', 'Token');
+  hashClient := LeIni('Config', 'HashClient');
+
+  if (not Token.equals('error')) then
+  begin
+    AccessServer(Token, hashClient);
+  end
+  else
+  begin
+    MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  URL := 'http://' + Server;
+  ShellExecute(0, 'open', PChar(URL), nil, nil, SW_SHOWNORMAL);
 end;
 
-procedure THCIAwsSecManCli.DoUpdate();
+procedure THCIAwsSecManCli.ButtonTokenSalvarClick(Sender: TObject);
+var
+  Token: String;
+begin
+
+  Token := EditToken.Text;
+
+  if (Token.Trim.IsEmpty) then
+  begin
+    MessageDlg('Digite o Token e clique em Salvar.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  GravaIni('Config', 'Token', Token.Trim);
+
+  MessageDlg('Token salvo com sucesso.', mtInformation, [mbOk], 0);
+
+  AccessServerTest(Token);
+
+  VerifyStatusServer(Token);
+
+end;
+
+function THCIAwsSecManCli.VerifyUpdateAvailable(): Boolean;
 var
   RemoteVersion: String;
+  ZipFile: String;
+  AppExeName: String;
+  FilePath: String;
+  FileName: String;
+  FileNameLen: Integer;
+  Teste: String;
 begin
 
   try
     try
 
+      AppExeName := ExtractFileName(Application.ExeName);
+
+      StatusBar1.Panels[0].Text := 'Verificando atualizações';
+
+      Application.ProcessMessages;
+
       RemoteVersion := GetUpdateVersion();
 
-      if not(RemoteVersion.Equals(AppVersion)) then
+      if not(RemoteVersion.equals(AppVersion)) then
       begin
+
+        StatusBar1.Panels[0].Text := 'Atualização encontrada (v' +
+          RemoteVersion + ')';
+
+        Application.ProcessMessages;
+
         if (DownloadUpdate(RemoteVersion)) then
         begin
-          RenameFile(AppPath + ExeName, AppPath + ExeName + '_' + AppVersion);
 
-          RenameFile(AppPath + ExeName + '_' + RemoteVersion,
-            AppPath + ExeName);
+          ZipFile := AppPath + 'update_' + RemoteVersion + '\' +
+            UpdatePackageName;
 
-          AppVersion := RemoteVersion;
+          if TZipFile.IsValid(ZipFile) then
+          begin
+            TZipFile.ExtractZipFile(ZipFile, AppPath + 'update_' +
+              RemoteVersion);
 
-          // SaveToRegistry('AppVersion', AppVersion);
+            DeleteFile(ZipFile);
+          end
+          else
+          begin
+            MessageDlg('Erro executando atualização. Zip file inválido',
+              mtError, [mbOk], 0);
+            Exit();
+          end;
 
-          if RunningAsService then
-            RunCommand('powershell.exe',
-              '-NonInteractive -ExecutionPolicy Unrestricted -command "Restart-Service HCIAwsSecManagerClients -Force"');
+          for FilePath in TDirectory.GetFiles(AppPath + 'update_' +
+            RemoteVersion) do
+          begin
+
+            FileName := ExtractFileName(FilePath);
+
+            if (FileExists(AppPath + FileName)) then
+              RenameFile(AppPath + FileName, AppPath + FileName + '_' +
+                AppVersion);
+
+            CopyFile(PWideChar(FilePath), PWideChar(AppPath + FileName), false);
+
+          end;
+
+          for FilePath in TDirectory.GetFiles(AppPath) do
+          begin
+
+            FileName := ExtractFileName(FilePath);
+            FileNameLen := FileName.Length;
+
+            Teste := FileName.Substring(FileNameLen - 2, 1);
+            Teste := FileName.Substring(FileNameLen - 1, 1);
+
+            if ((FileName.Substring(FileNameLen - 2, 1).equals('_')) and
+              (not FileName.Substring(FileNameLen - 1, 1).equals(AppVersion)))
+            then
+            begin
+              DeleteFile(FilePath);
+            end;
+
+          end;
+
+          Result := true;
+
+          MessageDlg
+            ('Atualização efetuada com sucesso. Reinicie a aplicação. (v' +
+            RemoteVersion + ')', mtInformation, [mbOk], 0);
+
+          Application.ProcessMessages;
+
+          StatusBar1.Panels[0].Text := 'Encerrando aplicação.';
+
+          Application.ProcessMessages;
+
+          Application.Terminate;
 
         end;
-      end;
+      end
+      else
+        Result := false;
 
     except
 
       on E: Exception do
       begin
 
-        if not RunningAsService then
-          MessageDlg('Erro executando atualização do software ' + E.Message,
-            mtError, mbOKCancel, 0);
+        Result := false;
+
+        MessageDlg('Erro executando atualização do software ' + E.Message,
+          mtError, [mbOk], 0);
 
       end;
 
@@ -324,28 +732,83 @@ begin
 
 end;
 
-function THCIAwsSecManCli.DownloadUpdate(RemoteVersion: String): boolean;
+function THCIAwsSecManCli.DownloadUpdate(RemoteVersion: String): Boolean;
 var
   fileDownload: TFileStream;
   lURL: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
 begin
   try
 
     try
 
-      fileDownload := TFileStream.Create(AppPath + ExeName + '_' +
-        RemoteVersion, fmCreate);
+      StatusBar1.Panels[0].Text := 'Baixando atualização. v(' +
+        AppVersion + ')';
 
-      lURL := URLS3Exe + ExeName;
-      IdHTTP1.Get(lURL, fileDownload);
+      Application.ProcessMessages;
+
+      if (not DirectoryExists(AppPath + 'update_' + RemoteVersion)) then
+      begin
+
+        if (not CreateDir(AppPath + 'update_' + RemoteVersion)) then
+        begin
+
+          MessageDlg('Erro criando diretório de atualização. ' + AppPath +
+            'update_' + RemoteVersion, mtError, [mbOk], 0);
+          Exit();
+
+        end;
+
+      end;
+
+      if (FileExists(AppPath + 'update_' + RemoteVersion + '\' +
+        UpdatePackageName)) then
+        DeleteFile(AppPath + 'update_' + RemoteVersion + '\' +
+          UpdatePackageName);
+
+      fileDownload := TFileStream.Create(AppPath + 'update_' + RemoteVersion +
+        '\' + UpdatePackageName, fmCreate);
+
+      lURL := URLS3Root + RemoteVersion + '/' + UpdatePackageName;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura * 20;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, fileDownload);
+
+      if (not FileExists(AppPath + 'update_' + RemoteVersion + '\' +
+        UpdatePackageName)) then
+      begin
+        Result := false;
+        MessageDlg('Falha efetuando download de atualização. ' + AppPath +
+          'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
+          [mbOk], 0);
+
+      end;
 
       Result := true;
     except
+      MessageDlg('Falha efetuando download de atualização. ' + AppPath +
+        'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
+        [mbOk], 0);
       Result := false;
     end;
 
   finally
     FreeAndNil(fileDownload);
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
 
   end;
 end;
@@ -357,6 +820,8 @@ var
   Resposta: String;
   JSonValue: TJSonValue;
   RemoteVersion: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
 begin
 
   lResponse := TStringStream.Create('');
@@ -365,7 +830,20 @@ begin
     try
 
       lURL := URLS3Version;
-      IdHTTP1.Get(lURL, lResponse);
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -383,18 +861,23 @@ begin
 
   finally
     lResponse.Free();
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
 
   end;
 
 end;
 
-function THCIAwsSecManCli.AccessServerTest(CNPJ: String): String;
+function THCIAwsSecManCli.AccessServerTest(Token: String): String;
 var
   lURL: String;
   lResponse: TStringStream;
   Resposta: String;
   JSonValue: TJSonValue;
   RetornoChamada: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
 
 begin
 
@@ -404,8 +887,21 @@ begin
 
       Screen.Cursor := crHourglass;
 
-      lURL := URLServicoAWSSecManTeste + CNPJ;
-      IdHTTP1.Get(lURL, lResponse);
+      lURL := URLServicoAWSSecManTeste + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -414,18 +910,18 @@ begin
       RetornoChamada := JSonValue.GetValue<string>('response');
       JSonValue.Free;
 
-      if (RetornoChamada.Equals('true')) then
-        MessageDlg('Teste efetuado com sucesso. CNPJ é válido.', mtInformation,
-          mbOKCancel, 0)
+      if (RetornoChamada.equals('true')) then
+        MessageDlg('Validação efetuada com sucesso. Token é válido.',
+          mtInformation, [mbOk], 0)
       else
-        MessageDlg('Teste falhou. CNPJ não é válido. [' + CNPJ + ']', mtError,
-          mbOKCancel, 0);
+        MessageDlg('Validação falhou. Token não é válido. [' + Token + ']',
+          mtError, [mbOk], 0);
 
     except
 
       on E: Exception do
       begin
-        MessageDlg('Teste falhou ' + E.Message, mtError, mbOKCancel, 0);
+        MessageDlg('Validação falhou ' + E.Message, mtError, [mbOk], 0);
       end;
 
     end;
@@ -434,24 +930,44 @@ begin
     Screen.Cursor := crDefault;
     lResponse.Free();
 
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
   end;
 
 end;
 
-function THCIAwsSecManCli.AccessServer(CNPJ: String; Hash: String): String;
+function THCIAwsSecManCli.AccessServer(Token: String; Hash: String): String;
 var
   lURL: String;
   lResponse: TStringStream;
   Resposta: String;
   JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+
 begin
 
   lResponse := TStringStream.Create('');
   try
     try
-      lURL := URLServicoAWSSecMan + CNPJ + '/hash/' + Hash + '/version/' +
+      lURL := URLServicoAWSSecMan + Token + '/hash/' + Hash + '/version/' +
         LeIni('Config', 'AppVersion');
-      IdHTTP1.Get(lURL, lResponse);
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -459,18 +975,138 @@ begin
 
       JSonValue.Free;
 
-      if not RunningAsService then
-        MessageDlg('Atualização de IP efetuada com sucesso', mtInformation,
-          mbOKCancel, 0);
+      StatusBar1.Panels[0].Text := 'Atualização de IP efetuada com sucesso';
+
+      Application.ProcessMessages;
 
     except
 
       on E: Exception do
       begin
 
-        if not RunningAsService then
-          MessageDlg('Erro executando atualização de IP ' + E.Message, mtError,
-            mbOKCancel, 0);
+        StatusBar1.Panels[0].Text := 'Erro executando atualização de IP ' +
+          E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.VerifyStatusServerSemToken(): String;
+var
+  Token: String;
+begin
+
+  Token := LeIni('Config', 'Token');
+
+  if (not Token.Trim.IsEmpty) then
+    VerifyStatusServer(Token);
+
+end;
+
+function THCIAwsSecManCli.VerifyStatusServer(Token: String): String;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  RetornoChamada: String;
+  StatusServer: String;
+  JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+
+begin
+
+  StatusBar1.Panels[0].Text := 'Verificando Status do Servidor';
+
+  Application.ProcessMessages;
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoStatusServer + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+
+      RetornoChamada := JSonValue.GetValue<string>('response');
+
+      if (RetornoChamada.equals('true')) then
+      begin
+        StatusServer := JSonValue.GetValue<string>('status');
+
+        if StatusServer.equals('running') then
+        begin
+          StatusServer := 'Ligado';
+          ServerIP := JSonValue.GetValue<string>('ip');
+          EditServer.Color := clLime;
+        end
+        else if StatusServer.equals('stopped') then
+        begin
+          StatusServer := 'Desligado';
+          EditServer.Color := clLtGray;
+        end
+        else if StatusServer.equals('pending') then
+        begin
+          StatusServer := 'Ligando';
+          EditServer.Color := clYellow;
+        end
+        else if StatusServer.equals('stopping') then
+        begin
+          StatusServer := 'Desligando';
+          EditServer.Color := clYellow;
+        end;
+
+      end
+      else
+      begin
+        StatusServer := '';
+      end;
+
+      EditServer.Text := StatusServer;
+
+      if (StatusServer.equals('Desligado')) then
+        ButtonLigarServer.Enabled := true
+      else
+        ButtonLigarServer.Enabled := false;
+
+      JSonValue.Free;
+
+      StatusBar1.Panels[0].Text := 'Status do Servidor: ' + StatusServer;
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro verificando Status do Servidor ' +
+          E.Message;
 
       end;
 
@@ -479,7 +1115,89 @@ begin
   finally
     lResponse.Free();
 
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
   end;
+
+end;
+
+function THCIAwsSecManCli.StartServer(Token: String): String;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+begin
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoStartServer + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+
+      JSonValue.Free;
+
+      EditServer.Text := 'Ligando';
+
+      Timer1.Enabled := true;
+
+      StatusBar1.Panels[0].Text := 'Aguarde, ligando Servidor.';
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+procedure THCIAwsSecManCli.DesconectarUsurio1Click(Sender: TObject);
+begin
+
+  if ((ListUserBoxSelectedItem.IsEmpty) or
+    (Application.MessageBox(PChar('Deseja realmente desconectar o usuário (' +
+    ListUserBoxSelectedItem + ') ?'), 'Atenção!',
+    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    Exit();
+
+  ShowMessage(ListUserBoxSelectedItem);
 
 end;
 
@@ -573,10 +1291,10 @@ begin
   end;
 end;
 
-function THCIAwsSecManCli.isCNPJ(CNPJ: string): boolean;
+function THCIAwsSecManCli.isCNPJ(CNPJ: string): Boolean;
 var
   dig13, dig14: string;
-  sm, i, r, peso: Integer;
+  sm, I, r, peso: Integer;
 begin
   // length - retorna o tamanho da string do CNPJ (CNPJ é um número formado por 14 dígitos)
   if ((CNPJ = '00000000000000') or (CNPJ = '11111111111111') or
@@ -584,7 +1302,7 @@ begin
     (CNPJ = '44444444444444') or (CNPJ = '55555555555555') or
     (CNPJ = '66666666666666') or (CNPJ = '77777777777777') or
     (CNPJ = '88888888888888') or (CNPJ = '99999999999999') or
-    (length(CNPJ) <> 14)) then
+    (Length(CNPJ) <> 14)) then
   begin
     isCNPJ := false;
     Exit;
@@ -595,10 +1313,10 @@ begin
     { *-- Cálculo do 1o. Digito Verificador --* }
     sm := 0;
     peso := 2;
-    for i := 12 downto 1 do
+    for I := 12 downto 1 do
     begin
       // StrToInt converte o i-ésimo caractere do CNPJ em um número
-      sm := sm + (StrToInt(CNPJ[i]) * peso);
+      sm := sm + (StrToInt(CNPJ[I]) * peso);
       peso := peso + 1;
       if (peso = 10) then
         peso := 2;
@@ -613,9 +1331,9 @@ begin
     { *-- Cálculo do 2o. Digito Verificador --* }
     sm := 0;
     peso := 2;
-    for i := 13 downto 1 do
+    for I := 13 downto 1 do
     begin
-      sm := sm + (StrToInt(CNPJ[i]) * peso);
+      sm := sm + (StrToInt(CNPJ[I]) * peso);
       peso := peso + 1;
       if (peso = 10) then
         peso := 2;
@@ -650,7 +1368,7 @@ begin
 
   // Add the us integer to the end:
   // '20160801 11:34:36.' + '00' + '123456'
-  Result := Result + StringOfChar('0', 6 - length(us)) + us;
+  Result := Result + StringOfChar('0', 6 - Length(us)) + us;
 end;
 
 function THCIAwsSecManCli.MD5(const texto: string): string;
@@ -667,26 +1385,44 @@ end;
 
 initialization
 
+THCIAwsSecManCli.AppVersion := '1';
+
+THCIAwsSecManCli.TimeoutConexao := 5000;
+THCIAwsSecManCli.TimeoutLeitura := 20000;
+
 THCIAwsSecManCli.AppIniFile := 'hciconfig.ini';
 
-THCIAwsSecManCli.URLS3Version :=
-  'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/version.json';
+THCIAwsSecManCli.UpdatePackageName := 'package.zip';
 
-THCIAwsSecManCli.URLS3Exe :=
+THCIAwsSecManCli.URLS3Version :=
+  'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/CurrentVersion.json';
+
+THCIAwsSecManCli.URLS3Root :=
   'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/';
 
-THCIAwsSecManCli.ExeName := 'HCIAwsLauncher.exe';
-
 THCIAwsSecManCli.URLServicoAWSSecManTeste :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/cnpj/';
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/token/';
 
 THCIAwsSecManCli.URLServicoAWSSecMan :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/cnpj/';
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/token/';
 
-// 04076778000488
+THCIAwsSecManCli.URLServicoStatusServer :=
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';
 
-// C:\Users\jpmonoo\Documents\reps\hci_aws_sec_manager_clients\Win32\Release
+THCIAwsSecManCli.URLServicoStartServer :=
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
 
-// 33914971000449
+// THCIAwsSecManCli.URLServicoStatusServer :=
+// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';
+//
+// THCIAwsSecManCli.URLServicoStartServer :=
+// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
+
+
+// THCIAwsSecManCli.URLServicoAWSSecManTeste :=
+// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/token/';
+//
+// THCIAwsSecManCli.URLServicoAWSSecMan :=
+// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/token/';
 
 end.
