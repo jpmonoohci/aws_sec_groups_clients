@@ -68,7 +68,9 @@ type
     function VerifyStatusServerSemToken(): String;
 
     procedure ListServerUsers();
+    procedure DisconnectServerUser(User: String);
     procedure ButtonListUsersClick(Sender: TObject);
+    function PingServer(): Boolean;
 
     procedure GravaIni(Secao: String; Chave: String; Valor: String);
 
@@ -263,7 +265,7 @@ begin
       Application.ProcessMessages;
 
       lURL := 'http://' + ServerIP + ':9998/ListUsers';
-      lURL := 'http://sistema.hci.com.br:9998/ListUsers';
+      lURL := 'http://aws18.hci.com.br:9998/ListUsers';
 
       Http := TIdHTTP.Create(nil);
 
@@ -314,6 +316,140 @@ begin
 
       StatusBar1.Panels[0].Text := 'Erro buscando usuários';
       Application.ProcessMessages;
+    end;
+
+  finally
+    lResponse.Free();
+    JSonObject.Free;
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+procedure THCIAwsSecManCli.DisconnectServerUser(User: String);
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  JSonUserValue: TJSonValue;
+  JSonObject: TJSonObject;
+  Resultado: String;
+  I: Integer;
+  Username: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+
+begin
+  lResponse := TStringStream.Create('');
+  JSonObject := TJSonObject.Create;
+
+  try
+    try
+
+      StatusBar1.Panels[0].Text := 'Por favor aguarde, desconectando usuário';
+      Application.ProcessMessages;
+
+      lURL := 'http://' + ServerIP + ':9998/DisconnectUser?user=' + User;
+
+      lURL := 'http://aws18.hci.com.br:9998/DisconnectUser?user=' + User;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.Request.CustomHeaders.AddValue('Authorization',
+        'Basic dXNlcjpRVzVoT0ZNdVdUUkhLVEluWG1JK1VRPT0=');
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura * 30;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      StatusBar1.Panels[0].Text := 'Usuário desconectado';
+      Application.ProcessMessages;
+
+    except
+
+      StatusBar1.Panels[0].Text := 'Erro desconectando usuário';
+      Application.ProcessMessages;
+    end;
+
+  finally
+    lResponse.Free();
+    JSonObject.Free;
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.PingServer(): Boolean;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  JSonUserValue: TJSonValue;
+  JSonObject: TJSonObject;
+  Resultado: String;
+  I: Integer;
+  Username: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+
+begin
+  lResponse := TStringStream.Create('');
+  JSonObject := TJSonObject.Create;
+
+  try
+    try
+
+      StatusBar1.Panels[0].Text := 'Aguardando servidor ficar online';
+      Application.ProcessMessages;
+
+      lURL := 'http://' + ServerIP + ':9998/PingServer';
+
+      lURL := 'http://aws18.hci.com.br:9998/PingServer';
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.Request.CustomHeaders.AddValue('Authorization',
+        'Basic dXNlcjpRVzVoT0ZNdVdUUkhLVEluWG1JK1VRPT0=');
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      StatusBar1.Panels[0].Text := 'Servidor está online';
+      Application.ProcessMessages;
+
+      Result := true;
+
+    except
+
+      Result := false;
+
     end;
 
   finally
@@ -387,7 +523,17 @@ begin
 end;
 
 procedure THCIAwsSecManCli.ButtonListUsersClick(Sender: TObject);
+var
+  ServerStatus: String;
 begin
+
+  ServerStatus := EditServer.Text;
+
+  // if (not ServerStatus.equals('Ligado')) then
+  // begin
+  // MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
+  // Exit();
+  // end;
 
   ButtonListUsers.Enabled := false;
   Screen.Cursor := crHourglass;
@@ -409,6 +555,7 @@ var
   CommandLines: TStringlist;
   RDPLines: TStringlist;
   PowershellCommand: String;
+  ContaPing: Integer;
 begin
 
   Server := ServerIP;
@@ -449,6 +596,24 @@ begin
   begin
     MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
     Exit();
+  end;
+
+  ContaPing := 1;
+  while (true) do
+  begin
+
+    if PingServer() then
+      break;
+
+    ContaPing := ContaPing + 1;
+
+    if (ContaPing = 20) then
+    begin
+      MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
+        mtError, [mbOk], 0);
+      Exit();
+    end;
+
   end;
 
   CommandLines := TStringlist.Create;
@@ -518,11 +683,17 @@ begin
 
     RDPLines.SaveToFile(AppPath + 'server.rdp');
 
+    StatusBar1.Panels[0].Text := 'Conectando ao servidor';
+    Application.ProcessMessages;
+
     PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted ' +
       AppPath + '\server.ps1 -username ' + QuotedStr(Username) + ' -password ' +
       QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
 
     RunCommand('powershell.exe', PowershellCommand);
+
+    StatusBar1.Panels[0].Text := 'Conexão executada';
+    Application.ProcessMessages;
 
   finally
 
@@ -1197,10 +1368,15 @@ begin
     mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
     Exit();
 
-  ShowMessage(ListUserBoxSelectedItem);
+  Screen.Cursor := crHourglass;
+
+  DisconnectServerUser(ListUserBoxSelectedItem);
+
+  ButtonListUsers.Enabled := true;
+
+  Screen.Cursor := crDefault;
 
 end;
-
 
 // ####################################################################################
 
