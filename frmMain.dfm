@@ -16,13 +16,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
-  object Label1: TLabel
-    Left = 192
-    Top = 42
-    Width = 64
-    Height = 13
-    Caption = 'Digite o CNPJ'
-  end
   object MaskEdit1: TMaskEdit
     Left = 192
     Top = 61
@@ -70,20 +63,20 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Width = 100
       end>
     ParentBiDiMode = False
-    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
+    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet1
+    ActivePage = TabSheet2
     TabOrder = 5
     object TabSheet1: TTabSheet
       Caption = 'Login'
       object Image1: TImage
-        Left = 269
-        Top = 1
+        Left = 277
+        Top = 0
         Width = 72
         Height = 65
         Picture.Data = {
@@ -298,6 +291,34 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
+      object Label2: TLabel
+        Left = 16
+        Top = 150
+        Width = 14
+        Height = 13
+        Caption = 'IP:'
+      end
+      object Label3: TLabel
+        Left = 16
+        Top = 203
+        Width = 33
+        Height = 13
+        Caption = 'Grupo:'
+      end
+      object Label4: TLabel
+        Left = 16
+        Top = 176
+        Width = 36
+        Height = 13
+        Caption = 'Server:'
+      end
+      object Label1: TLabel
+        Left = 16
+        Top = 230
+        Width = 37
+        Height = 13
+        Caption = 'Vers'#227'o:'
+      end
       object EditToken: TEdit
         Left = 16
         Top = 71
@@ -332,21 +353,45 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         OnClick = ButtonTestarTokenClick
       end
       object StaticText4: TStaticText
-        Left = 151
-        Top = 238
-        Width = 88
+        Left = -153
+        Top = 550
+        Width = 37
         Height = 17
-        Caption = 'Vers'#227'o Launcher:'
+        Caption = 'Vers'#227'o'
         TabOrder = 4
       end
       object EditVersion: TEdit
-        Left = 245
-        Top = 234
-        Width = 84
+        Left = 59
+        Top = 222
+        Width = 54
         Height = 21
-        ParentColor = True
+        Color = clWhite
         ReadOnly = True
         TabOrder = 5
+      end
+      object EditName: TEdit
+        Left = 59
+        Top = 168
+        Width = 270
+        Height = 21
+        ReadOnly = True
+        TabOrder = 6
+      end
+      object EditIP: TEdit
+        Left = 59
+        Top = 141
+        Width = 118
+        Height = 21
+        ReadOnly = True
+        TabOrder = 7
+      end
+      object EditGroup: TEdit
+        Left = 59
+        Top = 195
+        Width = 118
+        Height = 21
+        ReadOnly = True
+        TabOrder = 8
       end
     end
   end

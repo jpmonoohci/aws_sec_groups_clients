@@ -18,7 +18,6 @@ type
     IdHTTP1: TIdHTTP;
     Timer1: TTimer;
     MaskEdit1: TMaskEdit;
-    Label1: TLabel;
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
     ButtonAtualizacao: TButton;
@@ -48,6 +47,13 @@ type
     IdSSLIOHandlerSocketOpenSSL1: TIdSSLIOHandlerSocketOpenSSL;
     PopupMenu1: TPopupMenu;
     DesconectarUsurio1: TMenuItem;
+    Label2: TLabel;
+    Label3: TLabel;
+    Label4: TLabel;
+    EditName: TEdit;
+    EditIP: TEdit;
+    EditGroup: TEdit;
+    Label1: TLabel;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -101,6 +107,7 @@ type
     class var URLServicoStartServer: String;
     class var URLServicoStatusServer: String;
     class var ServerIP: String;
+    class var ServerGroup: String;
     class var TimeoutConexao: Integer;
     class var TimeoutLeitura: Integer;
     class var UpdatePackageName: String;
@@ -264,8 +271,8 @@ begin
       StatusBar1.Panels[0].Text := 'Por favor aguarde, buscando usuários';
       Application.ProcessMessages;
 
-      lURL := 'http://' + ServerIP + ':9998/ListUsers';
-      lURL := 'http://aws18.hci.com.br:9998/ListUsers';
+      lURL := 'http://' + ServerIP + ':9998/ListUsersByGroup?group=' +
+        ServerGroup;
 
       Http := TIdHTTP.Create(nil);
 
@@ -525,15 +532,36 @@ end;
 procedure THCIAwsSecManCli.ButtonListUsersClick(Sender: TObject);
 var
   ServerStatus: String;
+  Token: String;
+  hashClient: String;
 begin
 
   ServerStatus := EditServer.Text;
 
-  // if (not ServerStatus.equals('Ligado')) then
-  // begin
-  // MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
-  // Exit();
-  // end;
+  if (not ServerStatus.equals('Ligado')) then
+  begin
+    MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  if ServerGroup.equals('') then
+  begin
+    MessageDlg('Nome do Grupo inválido.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  Token := LeIni('Config', 'Token');
+  hashClient := LeIni('Config', 'HashClient');
+
+  if (not Token.equals('error')) then
+  begin
+    AccessServer(Token, hashClient);
+  end
+  else
+  begin
+    MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
+    Exit();
+  end;
 
   ButtonListUsers.Enabled := false;
   Screen.Cursor := crHourglass;
@@ -559,14 +587,10 @@ var
 begin
 
   Server := ServerIP;
-  Server := 'aws18.hci.com.br';
 
   Username := EditUserName.Text;
-  Username := 'administrator';
-  Username := 'user005.plasbarra';
 
   Password := '0101';
-  // Password := '@hci1936%';
 
   if (Username.Trim.IsEmpty) then
   begin
@@ -630,10 +654,10 @@ begin
 
     CommandLines.SaveToFile(AppPath + 'server.ps1');
 
-    RDPLines.Add('screen mode id:i:2');
+    // RDPLines.Add('screen mode id:i:2');
     RDPLines.Add('use multimon:i:0');
-    RDPLines.Add('desktopwidth:i:1920');
-    RDPLines.Add('desktopheight:i:1080');
+    // RDPLines.Add('desktopwidth:i:1920');
+    // RDPLines.Add('desktopheight:i:1080');
     RDPLines.Add('session bpp:i:32');
     RDPLines.Add('winposstr:s:0,1,0,0,864,669');
     RDPLines.Add('compression:i:1');
@@ -716,14 +740,10 @@ var
 begin
 
   Server := ServerIP;
-  Server := 'aws18.hci.com.br';
 
   Username := EditUserName.Text;
-  Username := 'administrator';
-  Username := 'user005.plasbarra';
 
   Password := '0101';
-  // Password := '@hci1936%';
 
   if (Username.Trim.IsEmpty) then
   begin
@@ -1191,6 +1211,9 @@ var
   Resposta: String;
   RetornoChamada: String;
   StatusServer: String;
+  IPServer: String;
+  NameServer: String;
+  GroupServer: String;
   JSonValue: TJSonValue;
   SSLIO: TIdSSLIOHandlerSocketOpenSSL;
   Http: TIdHTTP;
@@ -1200,6 +1223,10 @@ begin
   StatusBar1.Panels[0].Text := 'Verificando Status do Servidor';
 
   Application.ProcessMessages;
+
+  IPServer := '';
+  NameServer := '';
+  GroupServer := '';
 
   lResponse := TStringStream.Create('');
   try
@@ -1230,10 +1257,20 @@ begin
       begin
         StatusServer := JSonValue.GetValue<string>('status');
 
+        try
+          GroupServer := JSonValue.GetValue<string>('group');
+          ServerGroup := GroupServer;
+        except
+        end;
+
         if StatusServer.equals('running') then
         begin
           StatusServer := 'Ligado';
           ServerIP := JSonValue.GetValue<string>('ip');
+
+          IPServer := JSonValue.GetValue<string>('ip');
+          NameServer := JSonValue.GetValue<string>('name');
+
           EditServer.Color := clLime;
         end
         else if StatusServer.equals('stopped') then
@@ -1259,6 +1296,9 @@ begin
       end;
 
       EditServer.Text := StatusServer;
+      EditIP.Text := ServerIP;
+      EditName.Text := NameServer;
+      EditGroup.Text := GroupServer;
 
       if (StatusServer.equals('Desligado')) then
         ButtonLigarServer.Enabled := true
@@ -1589,16 +1629,15 @@ THCIAwsSecManCli.URLServicoStartServer :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
 
 // THCIAwsSecManCli.URLServicoStatusServer :=
-// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';
+// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';
 //
 // THCIAwsSecManCli.URLServicoStartServer :=
-// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
-
-
+// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
+//
 // THCIAwsSecManCli.URLServicoAWSSecManTeste :=
-// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/token/';
+// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/token/';
 //
 // THCIAwsSecManCli.URLServicoAWSSecMan :=
-// 'http://172.27.192.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/token/';
+// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/token/';
 
 end.
