@@ -63,14 +63,14 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Width = 100
       end>
     ParentBiDiMode = False
-    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
+    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet2
+    ActivePage = TabSheet3
     TabOrder = 5
     object TabSheet1: TTabSheet
       Caption = 'Login'
@@ -225,6 +225,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         ReadOnly = True
         TabOrder = 4
         Text = 'Atualizando'
+        OnChange = EditServerChange
       end
       object ButtonLigarServer: TButton
         Left = 21

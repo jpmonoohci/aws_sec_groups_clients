@@ -91,6 +91,7 @@ type
     procedure ListBoxUserMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure DesconectarUsurio1Click(Sender: TObject);
+    procedure EditServerChange(Sender: TObject);
 
   private
 
@@ -484,6 +485,9 @@ begin
     Exit();
   end;
 
+  PageControl1.Pages[0].Enabled := true;
+  PageControl1.Pages[1].Enabled := true;
+
   AccessServerTest(Token);
 
   VerifyStatusServer(Token);
@@ -622,22 +626,35 @@ begin
     Exit();
   end;
 
+  Screen.Cursor := crHourglass;
+
   ContaPing := 1;
-  while (true) do
+  while (ContaPing < 20) do
   begin
+
+    Application.ProcessMessages;
 
     if PingServer() then
       break;
 
+    Application.ProcessMessages;
+
+    sleep(10);
+
     ContaPing := ContaPing + 1;
 
-    if (ContaPing = 20) then
-    begin
-      MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
-        mtError, [mbOk], 0);
-      Exit();
-    end;
+  end;
 
+  Screen.Cursor := crDefault;
+
+  Application.ProcessMessages;
+
+  if (ContaPing >= 20) then
+  begin
+
+    MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
+      mtError, [mbOk], 0);
+    Exit();
   end;
 
   CommandLines := TStringlist.Create;
@@ -651,6 +668,8 @@ begin
       ('cmdkey /generic:"$servername" /User: "$username" /pass: "$password"');
 
     CommandLines.Add('mstsc /v:"$servername" ' + AppPath + '\server.rdp /f');
+
+    CommandLines.Add('write-output "Conexao executada"');
 
     CommandLines.SaveToFile(AppPath + 'server.ps1');
 
@@ -710,13 +729,14 @@ begin
     StatusBar1.Panels[0].Text := 'Conectando ao servidor';
     Application.ProcessMessages;
 
-    PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted ' +
-      AppPath + '\server.ps1 -username ' + QuotedStr(Username) + ' -password ' +
-      QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
+    PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted "' +
+      AppPath + 'server.ps1"' + ' -username ' + QuotedStr(Username) +
+      ' -password ' + QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
 
     RunCommand('powershell.exe', PowershellCommand);
 
     StatusBar1.Panels[0].Text := 'Conexão executada';
+
     Application.ProcessMessages;
 
   finally
@@ -795,6 +815,9 @@ begin
   GravaIni('Config', 'Token', Token.Trim);
 
   MessageDlg('Token salvo com sucesso.', mtInformation, [mbOk], 0);
+
+  PageControl1.Pages[0].Enabled := true;
+  PageControl1.Pages[1].Enabled := true;
 
   AccessServerTest(Token);
 
@@ -1002,6 +1025,34 @@ begin
     FreeAndNil(Http);
 
   end;
+end;
+
+procedure THCIAwsSecManCli.EditServerChange(Sender: TObject);
+var
+  StatusServer: String;
+begin
+
+  StatusServer := EditServer.Text;
+
+  if StatusServer.equals('Ligado') then
+
+    EditServer.Color := clLime
+
+  else if StatusServer.equals('Desligado') then
+
+    EditServer.Color := clLtGray
+
+  else if StatusServer.equals('Ligando') then
+
+    EditServer.Color := clYellow
+
+  else if StatusServer.equals('Desligando') then
+
+    EditServer.Color := clYellow
+  else
+
+    EditServer.Color := clWhite;
+
 end;
 
 function THCIAwsSecManCli.GetUpdateVersion(): string;
@@ -1271,22 +1322,21 @@ begin
           IPServer := JSonValue.GetValue<string>('ip');
           NameServer := JSonValue.GetValue<string>('name');
 
-          EditServer.Color := clLime;
         end
         else if StatusServer.equals('stopped') then
         begin
           StatusServer := 'Desligado';
-          EditServer.Color := clLtGray;
+
         end
         else if StatusServer.equals('pending') then
         begin
           StatusServer := 'Ligando';
-          EditServer.Color := clYellow;
+
         end
         else if StatusServer.equals('stopping') then
         begin
           StatusServer := 'Desligando';
-          EditServer.Color := clYellow;
+
         end;
 
       end
@@ -1483,24 +1533,24 @@ begin
     if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity,
       @saSecurity, true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess)
     then
-    begin
-      repeat
-        dRunning := WaitForSingleObject(piProcess.hProcess, 100);
-        Application.ProcessMessages();
-        repeat
-          dRead := 0;
-          ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil);
-          pBuffer[dRead] := #0;
+      // begin
+      // repeat
+      // dRunning := WaitForSingleObject(piProcess.hProcess, 100);
+      // Application.ProcessMessages();
+      // repeat
+      // dRead := 0;
+      // ReadFile(hRead, pBuffer[0], CReadBuffer, dRead, nil);
+      // pBuffer[dRead] := #0;
+      //
+      // OemToAnsi(pBuffer, pBuffer);
+      // retorno := retorno + String(pBuffer);
+      // until (dRead < CReadBuffer);
+      // until (dRunning <> WAIT_TIMEOUT);
+      // CloseHandle(piProcess.hProcess);
+      // CloseHandle(piProcess.hThread);
+      // end;
 
-          OemToAnsi(pBuffer, pBuffer);
-          retorno := retorno + String(pBuffer);
-        until (dRead < CReadBuffer);
-      until (dRunning <> WAIT_TIMEOUT);
-      CloseHandle(piProcess.hProcess);
-      CloseHandle(piProcess.hThread);
-    end;
-
-    CloseHandle(hRead);
+      CloseHandle(hRead);
     CloseHandle(hWrite);
 
     Result := retorno;
