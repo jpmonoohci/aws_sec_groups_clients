@@ -833,7 +833,6 @@ var
   FilePath: String;
   FileName: String;
   FileNameLen: Integer;
-  Teste: String;
 begin
 
   try
@@ -894,9 +893,6 @@ begin
 
             FileName := ExtractFileName(FilePath);
             FileNameLen := FileName.Length;
-
-            Teste := FileName.Substring(FileNameLen - 2, 1);
-            Teste := FileName.Substring(FileNameLen - 1, 1);
 
             if ((FileName.Substring(FileNameLen - 2, 1).equals('_')) and
               (not FileName.Substring(FileNameLen - 1, 1).equals(AppVersion)))
@@ -1007,6 +1003,8 @@ begin
         MessageDlg('Falha efetuando download de atualização. ' + AppPath +
           'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
           [mbOk], 0);
+
+        Exit;
 
       end;
 
