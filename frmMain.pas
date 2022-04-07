@@ -113,6 +113,7 @@ type
     class var TimeoutLeitura: Integer;
     class var UpdatePackageName: String;
     class var ListUserBoxSelectedItem: String;
+    class var IgnoreUpdates: Boolean;
 
   end;
 
@@ -129,6 +130,7 @@ var
   timeStamp: string;
   Username: string;
   Token: string;
+  IgnorarAtualizacao: string;
 
 begin
 
@@ -140,6 +142,20 @@ begin
   begin
     GravaIni('Config', 'AppPath', ExtractFilePath(Application.ExeName));
     AppPath := ExtractFilePath(Application.ExeName);
+  end;
+
+  IgnorarAtualizacao := LeIni('Config', 'IgnoreUpdates');
+
+  if (IgnorarAtualizacao.equals('error')) then
+  begin
+    GravaIni('Config', 'IgnoreUpdates', 'False');
+    AppPath := ExtractFilePath(Application.ExeName);
+  end
+  else
+  begin
+    if (IgnorarAtualizacao.equals('True')) then
+      IgnoreUpdates := True;
+
   end;
 
   AppToken := LeIni('Config', 'Token');
@@ -166,19 +182,19 @@ begin
   begin
     EditToken.Text := Token;
 
-    PageControl1.Pages[0].Enabled := true;
-    PageControl1.Pages[1].Enabled := true;
+    PageControl1.Pages[0].Enabled := True;
+    PageControl1.Pages[1].Enabled := True;
     PageControl1.ActivePageIndex := 0;
 
   end
   else
   begin
-    PageControl1.Pages[0].Enabled := false;
-    PageControl1.Pages[1].Enabled := false;
+    PageControl1.Pages[0].Enabled := False;
+    PageControl1.Pages[1].Enabled := False;
     PageControl1.ActivePageIndex := 2;
   end;
 
-  PageControl1.Pages[1].TabVisible := true;
+  PageControl1.Pages[1].TabVisible := True;
 
 end;
 
@@ -188,7 +204,7 @@ var
   StatusServer: String;
 
 begin
-  Timer1.Enabled := false;
+  Timer1.Enabled := False;
   try
     try
 
@@ -201,14 +217,14 @@ begin
 
         if (StatusServer.equals('Ligando')) then
         begin
-          Timer1.Enabled := true;
+          Timer1.Enabled := True;
         end;
       end;
     except
 
     end;
   except
-    Timer1.Enabled := true;
+    Timer1.Enabled := True;
   end;
 end;
 
@@ -227,7 +243,7 @@ begin
   inherited;
   if (Button = mbRight) then
   begin
-    I := ListBoxUser.ItemAtPos(Point(X, Y), true);
+    I := ListBoxUser.ItemAtPos(Point(X, Y), True);
 
     ListBoxUser.ItemIndex := I;
 
@@ -257,6 +273,7 @@ var
   Resultado: String;
   I: Integer;
   Username: String;
+  Connected: String;
   SSLIO: TIdSSLIOHandlerSocketOpenSSL;
   Http: TIdHTTP;
 
@@ -284,7 +301,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -311,7 +328,14 @@ begin
 
             Username := JSonUserValue.GetValue<string>('nome');
 
-            ListBoxUser.Items.Add(Username);
+            Connected := JSonUserValue.GetValue<string>('connected');
+
+            if (Connected.equals('True')) then
+              Connected := ' (Conectado)'
+            else
+              Connected := '';
+
+            ListBoxUser.Items.Add(Username + Connected);
 
           end;
 
@@ -375,7 +399,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura * 30;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -441,7 +465,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -452,11 +476,11 @@ begin
       StatusBar1.Panels[0].Text := 'Servidor está online';
       Application.ProcessMessages;
 
-      Result := true;
+      Result := True;
 
     except
 
-      Result := false;
+      Result := False;
 
     end;
 
@@ -485,8 +509,8 @@ begin
     Exit();
   end;
 
-  PageControl1.Pages[0].Enabled := true;
-  PageControl1.Pages[1].Enabled := true;
+  PageControl1.Pages[0].Enabled := True;
+  PageControl1.Pages[1].Enabled := True;
 
   AccessServerTest(Token);
 
@@ -505,11 +529,11 @@ begin
   if (not Token.equals('error')) then
   begin
 
-    ButtonAtualizarStatusServer.Enabled := false;
+    ButtonAtualizarStatusServer.Enabled := False;
 
     VerifyStatusServer(Token);
 
-    ButtonAtualizarStatusServer.Enabled := true;
+    ButtonAtualizarStatusServer.Enabled := True;
 
   end
 
@@ -526,7 +550,7 @@ begin
   if (not Token.equals('error')) then
   begin
 
-    ButtonLigarServer.Enabled := false;
+    ButtonLigarServer.Enabled := False;
     StartServer(Token);
 
   end
@@ -567,12 +591,12 @@ begin
     Exit();
   end;
 
-  ButtonListUsers.Enabled := false;
+  ButtonListUsers.Enabled := False;
   Screen.Cursor := crHourglass;
 
   ListServerUsers();
 
-  ButtonListUsers.Enabled := true;
+  ButtonListUsers.Enabled := True;
   Screen.Cursor := crDefault;
 end;
 
@@ -816,8 +840,8 @@ begin
 
   MessageDlg('Token salvo com sucesso.', mtInformation, [mbOk], 0);
 
-  PageControl1.Pages[0].Enabled := true;
-  PageControl1.Pages[1].Enabled := true;
+  PageControl1.Pages[0].Enabled := True;
+  PageControl1.Pages[1].Enabled := True;
 
   AccessServerTest(Token);
 
@@ -829,7 +853,6 @@ function THCIAwsSecManCli.VerifyUpdateAvailable(): Boolean;
 var
   RemoteVersion: String;
   ZipFile: String;
-  AppExeName: String;
   FilePath: String;
   FileName: String;
   FileNameLen: Integer;
@@ -838,7 +861,11 @@ begin
   try
     try
 
-      AppExeName := ExtractFileName(Application.ExeName);
+      if (IgnoreUpdates) then
+      begin
+        Result := False;
+        Exit;
+      end;
 
       StatusBar1.Panels[0].Text := 'Verificando atualizações';
 
@@ -884,7 +911,7 @@ begin
               RenameFile(AppPath + FileName, AppPath + FileName + '_' +
                 AppVersion);
 
-            CopyFile(PWideChar(FilePath), PWideChar(AppPath + FileName), false);
+            CopyFile(PWideChar(FilePath), PWideChar(AppPath + FileName), False);
 
           end;
 
@@ -903,7 +930,7 @@ begin
 
           end;
 
-          Result := true;
+          Result := True;
 
           MessageDlg
             ('Atualização efetuada com sucesso. Reinicie a aplicação. (v' +
@@ -920,14 +947,14 @@ begin
         end;
       end
       else
-        Result := false;
+        Result := False;
 
     except
 
       on E: Exception do
       begin
 
-        Result := false;
+        Result := False;
 
         MessageDlg('Erro executando atualização do software ' + E.Message,
           mtError, [mbOk], 0);
@@ -988,7 +1015,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura * 20;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -999,7 +1026,7 @@ begin
       if (not FileExists(AppPath + 'update_' + RemoteVersion + '\' +
         UpdatePackageName)) then
       begin
-        Result := false;
+        Result := False;
         MessageDlg('Falha efetuando download de atualização. ' + AppPath +
           'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
           [mbOk], 0);
@@ -1008,12 +1035,12 @@ begin
 
       end;
 
-      Result := true;
+      Result := True;
     except
       MessageDlg('Falha efetuando download de atualização. ' + AppPath +
         'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
         [mbOk], 0);
-      Result := false;
+      Result := False;
     end;
 
   finally
@@ -1077,7 +1104,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1135,7 +1162,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1201,7 +1228,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1288,7 +1315,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1349,9 +1376,9 @@ begin
       EditGroup.Text := GroupServer;
 
       if (StatusServer.equals('Desligado')) then
-        ButtonLigarServer.Enabled := true
+        ButtonLigarServer.Enabled := True
       else
-        ButtonLigarServer.Enabled := false;
+        ButtonLigarServer.Enabled := False;
 
       JSonValue.Free;
 
@@ -1403,7 +1430,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
+      Http.HandleRedirects := True;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1419,7 +1446,7 @@ begin
 
       EditServer.Text := 'Ligando';
 
-      Timer1.Enabled := true;
+      Timer1.Enabled := True;
 
       StatusBar1.Panels[0].Text := 'Aguarde, ligando Servidor.';
 
@@ -1448,6 +1475,8 @@ begin
 end;
 
 procedure THCIAwsSecManCli.DesconectarUsurio1Click(Sender: TObject);
+var
+  User: String;
 begin
 
   if ((ListUserBoxSelectedItem.IsEmpty) or
@@ -1458,9 +1487,14 @@ begin
 
   Screen.Cursor := crHourglass;
 
-  DisconnectServerUser(ListUserBoxSelectedItem);
+  User := ListUserBoxSelectedItem;
 
-  ButtonListUsers.Enabled := true;
+  if (User.EndsWith(' (Conectado)')) then
+    User := User.Substring(0, User.Length - 12);
+
+  DisconnectServerUser(User);
+
+  ButtonListUsers.Enabled := True;
 
   Screen.Cursor := crDefault;
 
@@ -1515,7 +1549,7 @@ var
 begin
   retorno := '';
   saSecurity.nLength := SizeOf(TSecurityAttributes);
-  saSecurity.bInheritHandle := true;
+  saSecurity.bInheritHandle := True;
   saSecurity.lpSecurityDescriptor := nil;
 
   if CreatePipe(hRead, hWrite, @saSecurity, 0) then
@@ -1529,7 +1563,7 @@ begin
     suiStartup.wShowWindow := SW_HIDE;
 
     if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity,
-      @saSecurity, true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess)
+      @saSecurity, True, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess)
     then
       // begin
       // repeat
@@ -1568,7 +1602,7 @@ begin
     (CNPJ = '88888888888888') or (CNPJ = '99999999999999') or
     (Length(CNPJ) <> 14)) then
   begin
-    isCNPJ := false;
+    isCNPJ := False;
     Exit;
   end;
 
@@ -1610,11 +1644,11 @@ begin
 
     { Verifica se os digitos calculados conferem com os digitos informados. }
     if ((dig13 = CNPJ[13]) and (dig14 = CNPJ[14])) then
-      isCNPJ := true
+      isCNPJ := True
     else
-      isCNPJ := false;
+      isCNPJ := False;
   except
-    isCNPJ := false
+    isCNPJ := False
   end;
 end;
 
@@ -1650,6 +1684,8 @@ end;
 initialization
 
 THCIAwsSecManCli.AppVersion := '1';
+
+THCIAwsSecManCli.IgnoreUpdates := False;
 
 THCIAwsSecManCli.TimeoutConexao := 5000;
 THCIAwsSecManCli.TimeoutLeitura := 20000;

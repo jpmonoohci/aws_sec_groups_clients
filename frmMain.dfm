@@ -63,21 +63,17 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Width = 100
       end>
     ParentBiDiMode = False
-    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
+    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet3
+    ActivePage = TabSheet2
     TabOrder = 5
     object TabSheet1: TTabSheet
       Caption = 'Login'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Image1: TImage
         Left = 277
         Top = 0
@@ -263,10 +259,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet2: TTabSheet
       Caption = 'Usu'#225'rios'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ListBoxUser: TListBox
         Left = 21
         Top = 18
