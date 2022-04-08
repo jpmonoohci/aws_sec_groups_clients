@@ -1,5 +1,5 @@
 post build
-"C:\Program Files (x86)\Windows Kits\10\bin\x86\signtool.exe" sign /f "C:\Users\jpmonoo\Documents\reps\hci-code-sign.pfx" /p "123456" /d "HCI Sistemas Integrados" /du "https://hci.com.br/" /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(OUTPUTPATH)"&ren "$(OUTPUTPATH)" "HCIAwsLauncher.exe" 
+"C:\Program Files (x86)\Windows Kits\10\bin\x86\signtool.exe" sign /f "C:\Users\jpmonoo\Documents\reps\hci-code-sign.pfx" /p "123456" /d "HCI Sistemas Integrados" /du "https://hci.com.br/" /fd sha256 /tr http://timestamp.comodoca.com/?td=sha256 /td sha256 /as "$(OUTPUTPATH)"
 
 pre-build
 del $(OUTPUTPATH)&del "$(PROJECTDIR)\$(OUTPUTDIR)HCIAwsLauncher.exe" 

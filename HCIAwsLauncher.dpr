@@ -1,4 +1,4 @@
-program HCIAwsSecManagerClients;
+program HCIAwsLauncher;
 
 uses
   Vcl.Forms,

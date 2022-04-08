@@ -1,6 +1,6 @@
 object srvService: TsrvService
   OldCreateOrder = False
-  DisplayName = 'HCIAwsSecManagerClients'
+  DisplayName = 'HCIAwsLauncher'
   OnExecute = ServiceExecute
   Height = 217
   Width = 381
