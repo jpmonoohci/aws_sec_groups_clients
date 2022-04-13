@@ -881,11 +881,14 @@ begin
 
         Application.ProcessMessages;
 
+        ZipFile := AppPath + 'update_' + RemoteVersion + '\' +
+          UpdatePackageName;
+
+        if (FileExists(ZipFile)) then
+          DeleteFile(ZipFile);
+
         if (DownloadUpdate(RemoteVersion)) then
         begin
-
-          ZipFile := AppPath + 'update_' + RemoteVersion + '\' +
-            UpdatePackageName;
 
           if TZipFile.IsValid(ZipFile) then
           begin
@@ -1479,18 +1482,18 @@ var
   User: String;
 begin
 
-  if ((ListUserBoxSelectedItem.IsEmpty) or
-    (Application.MessageBox(PChar('Deseja realmente desconectar o usuário (' +
-    ListUserBoxSelectedItem + ') ?'), 'Atenção!',
-    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
-    Exit();
-
-  Screen.Cursor := crHourglass;
-
   User := ListUserBoxSelectedItem;
 
   if (User.EndsWith(' (Conectado)')) then
     User := User.Substring(0, User.Length - 12);
+
+  if ((ListUserBoxSelectedItem.IsEmpty) or
+    (Application.MessageBox(PChar('Deseja realmente desconectar o usuário (' +
+    User + ') ?'), 'Atenção!',
+    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    Exit();
+
+  Screen.Cursor := crHourglass;
 
   DisconnectServerUser(User);
 
