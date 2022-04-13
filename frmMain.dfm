@@ -11630,7 +11630,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Width = 100
       end>
     ParentBiDiMode = False
-    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
+    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0

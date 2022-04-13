@@ -93,6 +93,7 @@ type
     procedure DesconectarUsurio1Click(Sender: TObject);
     procedure EditServerChange(Sender: TObject);
 
+
   private
 
   public
@@ -229,8 +230,15 @@ begin
 end;
 
 procedure THCIAwsSecManCli.ListBoxUserDblClick(Sender: TObject);
+var
+  User: String;
 begin
-  EditUserName.Text := ListBoxUser.Items[ListBoxUser.ItemIndex];
+  User := ListBoxUser.Items[ListBoxUser.ItemIndex];
+
+  if (User.EndsWith(' (Conectado)')) then
+    User := User.Substring(0, User.Length - 12);
+
+  EditUserName.Text := User;
   PageControl1.ActivePageIndex := 0;
 end;
 
@@ -387,8 +395,6 @@ begin
       Application.ProcessMessages;
 
       lURL := 'http://' + ServerIP + ':9998/DisconnectUser?user=' + User;
-
-      lURL := 'http://aws18.hci.com.br:9998/DisconnectUser?user=' + User;
 
       Http := TIdHTTP.Create(nil);
 
@@ -1489,8 +1495,8 @@ begin
 
   if ((ListUserBoxSelectedItem.IsEmpty) or
     (Application.MessageBox(PChar('Deseja realmente desconectar o usuário (' +
-    User + ') ?'), 'Atenção!',
-    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    User + ') ?'), 'Atenção!', mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo)
+    = idNo)) then
     Exit();
 
   Screen.Cursor := crHourglass;
@@ -1686,7 +1692,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '1';
+THCIAwsSecManCli.AppVersion := '2';
 
 THCIAwsSecManCli.IgnoreUpdates := False;
 
