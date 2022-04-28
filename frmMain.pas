@@ -93,7 +93,6 @@ type
     procedure DesconectarUsurio1Click(Sender: TObject);
     procedure EditServerChange(Sender: TObject);
 
-
   private
 
   public
@@ -115,6 +114,7 @@ type
     class var UpdatePackageName: String;
     class var ListUserBoxSelectedItem: String;
     class var IgnoreUpdates: Boolean;
+    class var HasAdminRights: Boolean;
 
   end;
 
@@ -132,6 +132,7 @@ var
   Username: string;
   Token: string;
   IgnorarAtualizacao: string;
+  TemDireitosAdmin: string;
 
 begin
 
@@ -158,6 +159,11 @@ begin
       IgnoreUpdates := True;
 
   end;
+
+  TemDireitosAdmin := LeIni('Config', 'HasAdminRights');
+
+  if (TemDireitosAdmin.equals('True')) then
+    HasAdminRights := True;
 
   AppToken := LeIni('Config', 'Token');
 
@@ -249,6 +255,10 @@ var
   PopupPos: TPoint;
 begin
   inherited;
+
+  if (not HasAdminRights) then
+    Exit();
+
   if (Button = mbRight) then
   begin
     I := ListBoxUser.ItemAtPos(Point(X, Y), True);
@@ -754,6 +764,11 @@ begin
     RDPLines.Add('devicestoredirect:s:*');
     RDPLines.Add('full address:s:');
 
+    RDPLines.Add('remoteapplicationmode:i:1');
+    RDPLines.Add('remoteapplicationname:s:HCI App Menu');
+    RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\FloatingPanel.exe');
+    RDPLines.Add('remoteapplicationcmdline:s:');
+
     RDPLines.SaveToFile(AppPath + 'server.rdp');
 
     StatusBar1.Panels[0].Text := 'Conectando ao servidor';
@@ -1229,7 +1244,7 @@ begin
   try
     try
       lURL := URLServicoAWSSecMan + Token + '/hash/' + Hash + '/version/' +
-        LeIni('Config', 'AppVersion');
+        AppVersion;
 
       Http := TIdHTTP.Create(nil);
 
@@ -1692,9 +1707,11 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '2';
+THCIAwsSecManCli.AppVersion := '4';
 
 THCIAwsSecManCli.IgnoreUpdates := False;
+
+THCIAwsSecManCli.HasAdminRights := False;
 
 THCIAwsSecManCli.TimeoutConexao := 5000;
 THCIAwsSecManCli.TimeoutLeitura := 20000;

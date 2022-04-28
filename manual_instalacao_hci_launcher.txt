@@ -1,0 +1,23 @@
+Instalacao do HCI Launcher
+
+* Necessaria instalacao do HCI Accounts Manager no servidor do cliente ( Apenas um servico eh instalado por servidor, independentemente de ser servidor compartilhado ou para apenas um cliente )
+
+1) Criar diretorio C:\HCI_LAUNCHER
+2) Baixar ultima versao do package.zip de https://hci-aws-sec-man-cli-updates.s3.us-east-1.amazonaws.com/list.html
+3) Descompactar o arquivo package.zip em C:\HCI_LAUNCHER
+4) Executar o programa C:\HCI_LAUNCHER\HCIAwsLauncher.exe
+5) Copiar o Token do cliente da pagina do cliente no painel da HCI
+6) Colar o Token do Cliente na aba Configuracao, Salvar e Validar
+7) Verificar se os dados de servidor, grupo estao corretos.
+8) Testar Atualizacao de Status de Servidor, Listagem de usuarios e Execucao do HCI
+9) Criar atalho do programa C:\HCI_LAUNCHER\HCIAwsLauncher.exe na Area de trabalho do cliente
+10) Apos instalacao em todas as maquinas do cliente, comunicar para que facamos o bloqueio de portas no servidor do cliente
+11) Anexar na instancia do cliente o security group hci_customers_security_group
+
+Configuracoes do hciconfig.ini
+
+-HasAdminRights 
+Se configurado com True - Habilita a opção de desconectar usuários
+
+-IgnoreUpdates
+Se configurado com True - Desconsidera novas atualizações
