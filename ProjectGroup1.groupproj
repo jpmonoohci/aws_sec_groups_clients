@@ -1,0 +1,36 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{3A9A8354-814A-485B-9D29-CA0BED026119}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="HCIAwsLauncher.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="HCIAwsLauncher">
+        <MSBuild Projects="HCIAwsLauncher.dproj"/>
+    </Target>
+    <Target Name="HCIAwsLauncher:Clean">
+        <MSBuild Projects="HCIAwsLauncher.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="HCIAwsLauncher:Make">
+        <MSBuild Projects="HCIAwsLauncher.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="HCIAwsLauncher"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="HCIAwsLauncher:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="HCIAwsLauncher:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

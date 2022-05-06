@@ -766,7 +766,7 @@ begin
 
     RDPLines.Add('remoteapplicationmode:i:1');
     RDPLines.Add('remoteapplicationname:s:HCI App Menu');
-    RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\FloatingPanel.exe');
+    RDPLines.Add('remoteapplicationprogram:s:C:\HCI_ACCOUNTS_MANAGER\TSPLusNada.exe');
     RDPLines.Add('remoteapplicationcmdline:s:');
 
     RDPLines.SaveToFile(AppPath + 'server.rdp');
@@ -1707,14 +1707,14 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '4';
+THCIAwsSecManCli.AppVersion := '5';
 
 THCIAwsSecManCli.IgnoreUpdates := False;
 
 THCIAwsSecManCli.HasAdminRights := False;
 
 THCIAwsSecManCli.TimeoutConexao := 5000;
-THCIAwsSecManCli.TimeoutLeitura := 20000;
+THCIAwsSecManCli.TimeoutLeitura := 60000;
 
 THCIAwsSecManCli.AppIniFile := 'hciconfig.ini';
 
