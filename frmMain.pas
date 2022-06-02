@@ -27,7 +27,7 @@ type
     TabSheet2: TTabSheet;
     TabSheet3: TTabSheet;
     ListBoxUser: TListBox;
-    ButtonLogin: TButton;
+    ButtonExecutarHCI: TButton;
     Button2: TButton;
     ButtonListUsers: TButton;
     EditUserName: TEdit;
@@ -54,6 +54,7 @@ type
     EditIP: TEdit;
     EditGroup: TEdit;
     Label1: TLabel;
+    ButtonTesteConexao: TButton;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -81,7 +82,7 @@ type
     procedure GravaIni(Secao: String; Chave: String; Valor: String);
 
     function LeIni(Secao: String; Chave: String): String;
-    procedure ButtonLoginClick(Sender: TObject);
+    procedure ButtonExecutarHCIClick(Sender: TObject);
     procedure ButtonTokenSalvarClick(Sender: TObject);
     procedure ButtonTestarTokenClick(Sender: TObject);
     procedure ButtonLigarServerClick(Sender: TObject);
@@ -92,6 +93,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure DesconectarUsurio1Click(Sender: TObject);
     procedure EditServerChange(Sender: TObject);
+    procedure ButtonTesteConexaoClick(Sender: TObject);
 
   private
 
@@ -115,6 +117,8 @@ type
     class var ListUserBoxSelectedItem: String;
     class var IgnoreUpdates: Boolean;
     class var HasAdminRights: Boolean;
+    class var ClientTSPlus: String;
+    class var DebugExec: Boolean;
 
   end;
 
@@ -133,10 +137,21 @@ var
   Token: string;
   IgnorarAtualizacao: string;
   TemDireitosAdmin: string;
+  DebugString: string;
 
 begin
 
   EditVersion.Text := AppVersion;
+
+  DebugString := LeIni('Config', 'DebugExec');
+
+  if (DebugString.equals('error')) then
+    DebugExec := false
+  else
+  begin
+    if (DebugString.equals('True')) then
+      DebugExec := true;
+  end;
 
   AppPath := LeIni('Config', 'AppPath');
 
@@ -156,14 +171,14 @@ begin
   else
   begin
     if (IgnorarAtualizacao.equals('True')) then
-      IgnoreUpdates := True;
+      IgnoreUpdates := true;
 
   end;
 
   TemDireitosAdmin := LeIni('Config', 'HasAdminRights');
 
   if (TemDireitosAdmin.equals('True')) then
-    HasAdminRights := True;
+    HasAdminRights := true;
 
   AppToken := LeIni('Config', 'Token');
 
@@ -189,19 +204,19 @@ begin
   begin
     EditToken.Text := Token;
 
-    PageControl1.Pages[0].Enabled := True;
-    PageControl1.Pages[1].Enabled := True;
+    PageControl1.Pages[0].Enabled := true;
+    PageControl1.Pages[1].Enabled := true;
     PageControl1.ActivePageIndex := 0;
 
   end
   else
   begin
-    PageControl1.Pages[0].Enabled := False;
-    PageControl1.Pages[1].Enabled := False;
+    PageControl1.Pages[0].Enabled := false;
+    PageControl1.Pages[1].Enabled := false;
     PageControl1.ActivePageIndex := 2;
   end;
 
-  PageControl1.Pages[1].TabVisible := True;
+  PageControl1.Pages[1].TabVisible := true;
 
 end;
 
@@ -211,7 +226,7 @@ var
   StatusServer: String;
 
 begin
-  Timer1.Enabled := False;
+  Timer1.Enabled := false;
   try
     try
 
@@ -224,14 +239,14 @@ begin
 
         if (StatusServer.equals('Ligando')) then
         begin
-          Timer1.Enabled := True;
+          Timer1.Enabled := true;
         end;
       end;
     except
 
     end;
   except
-    Timer1.Enabled := True;
+    Timer1.Enabled := true;
   end;
 end;
 
@@ -261,7 +276,7 @@ begin
 
   if (Button = mbRight) then
   begin
-    I := ListBoxUser.ItemAtPos(Point(X, Y), True);
+    I := ListBoxUser.ItemAtPos(Point(X, Y), true);
 
     ListBoxUser.ItemIndex := I;
 
@@ -319,7 +334,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -415,7 +430,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura * 30;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -481,7 +496,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -492,11 +507,11 @@ begin
       StatusBar1.Panels[0].Text := 'Servidor está online';
       Application.ProcessMessages;
 
-      Result := True;
+      Result := true;
 
     except
 
-      Result := False;
+      Result := false;
 
     end;
 
@@ -525,12 +540,23 @@ begin
     Exit();
   end;
 
-  PageControl1.Pages[0].Enabled := True;
-  PageControl1.Pages[1].Enabled := True;
+  PageControl1.Pages[0].Enabled := true;
+  PageControl1.Pages[1].Enabled := true;
 
   AccessServerTest(Token);
 
   VerifyStatusServer(Token);
+
+end;
+
+procedure THCIAwsSecManCli.ButtonTesteConexaoClick(Sender: TObject);
+var
+  URL: String;
+begin
+
+  URL := 'http://hcisistemasintegrados.speedtestcustom.com';
+
+  ShellExecute(0, 'open', PChar(URL), nil, nil, SW_SHOWNORMAL);
 
 end;
 
@@ -545,11 +571,11 @@ begin
   if (not Token.equals('error')) then
   begin
 
-    ButtonAtualizarStatusServer.Enabled := False;
+    ButtonAtualizarStatusServer.Enabled := false;
 
     VerifyStatusServer(Token);
 
-    ButtonAtualizarStatusServer.Enabled := True;
+    ButtonAtualizarStatusServer.Enabled := true;
 
   end
 
@@ -566,7 +592,7 @@ begin
   if (not Token.equals('error')) then
   begin
 
-    ButtonLigarServer.Enabled := False;
+    ButtonLigarServer.Enabled := false;
     StartServer(Token);
 
   end
@@ -607,16 +633,16 @@ begin
     Exit();
   end;
 
-  ButtonListUsers.Enabled := False;
+  ButtonListUsers.Enabled := false;
   Screen.Cursor := crHourglass;
 
   ListServerUsers();
 
-  ButtonListUsers.Enabled := True;
+  ButtonListUsers.Enabled := true;
   Screen.Cursor := crDefault;
 end;
 
-procedure THCIAwsSecManCli.ButtonLoginClick(Sender: TObject);
+procedure THCIAwsSecManCli.ButtonExecutarHCIClick(Sender: TObject);
 var
   Username: String;
   Password: String;
@@ -624,8 +650,8 @@ var
   ServerStatus: String;
   Token: String;
   hashClient: String;
-  CommandLines: TStringlist;
-  RDPLines: TStringlist;
+  // CommandLines: TStringlist;
+  // RDPLines: TStringlist;
   PowershellCommand: String;
   ContaPing: Integer;
 begin
@@ -697,97 +723,112 @@ begin
     Exit();
   end;
 
-  CommandLines := TStringlist.Create;
-  RDPLines := TStringlist.Create;
+  // CommandLines := TStringlist.Create;
+  // RDPLines := TStringlist.Create;
   try
 
-    CommandLines.Add('param($username, $password, $servername)');
-    CommandLines.Add('write-output "Connecting to $servername"');
-    CommandLines.Add('cmdkey /delete:"$servername"');
-    CommandLines.Add
-      ('cmdkey /generic:"$servername" /User: "$username" /pass: "$password"');
-
-    CommandLines.Add('mstsc /v:"$servername" ' + AppPath + '\server.rdp /f');
-
-    CommandLines.Add('write-output "Conexao executada"');
-
-    CommandLines.SaveToFile(AppPath + 'server.ps1');
-
-    // RDPLines.Add('screen mode id:i:2');
-    RDPLines.Add('use multimon:i:0');
-    // RDPLines.Add('desktopwidth:i:1920');
-    // RDPLines.Add('desktopheight:i:1080');
-    RDPLines.Add('session bpp:i:32');
-    RDPLines.Add('winposstr:s:0,1,0,0,864,669');
-    RDPLines.Add('compression:i:1');
-    RDPLines.Add('keyboardhook:i:2');
-    RDPLines.Add('audiocapturemode:i:0');
-    RDPLines.Add('videoplaybackmode:i:1');
-    RDPLines.Add('connection type:i:7');
-    RDPLines.Add('networkautodetect:i:1');
-    RDPLines.Add('bandwidthautodetect:i:1');
-    RDPLines.Add('displayconnectionbar:i:0');
-    RDPLines.Add('enableworkspacereconnect:i:0');
-    RDPLines.Add('disable wallpaper:i:0');
-    RDPLines.Add('allow font smoothing:i:0');
-    RDPLines.Add('allow desktop composition:i:0');
-    RDPLines.Add('disable full window drag:i:1');
-    RDPLines.Add('disable menu anims:i:1');
-    RDPLines.Add('disable themes:i:0');
-    RDPLines.Add('disable cursor setting:i:0');
-    RDPLines.Add('bitmapcachepersistenable:i:1');
-    RDPLines.Add('audiomode:i:0');
-    RDPLines.Add('redirectprinters:i:1');
-    RDPLines.Add('redirectlocation:i:1');
-    RDPLines.Add('redirectcomports:i:1');
-    RDPLines.Add('redirectsmartcards:i:1');
-    RDPLines.Add('redirectclipboard:i:1');
-    RDPLines.Add('redirectposdevices:i:0');
-    RDPLines.Add('autoreconnection enabled:i:1');
-    RDPLines.Add('authentication level:i:0');
-    RDPLines.Add('prompt for credentials:i:0');
-    RDPLines.Add('negotiate security layer:i:1');
-    RDPLines.Add('remoteapplicationmode:i:0');
-    RDPLines.Add('alternate shell:s:');
-    RDPLines.Add('shell working directory:s:');
-    RDPLines.Add('gatewayhostname:s:');
-    RDPLines.Add('gatewayusagemethod:i:4');
-    RDPLines.Add('gatewaycredentialssource:i:4');
-    RDPLines.Add('gatewayprofileusagemethod:i:0');
-    RDPLines.Add('promptcredentialonce:i:0');
-    RDPLines.Add('gatewaybrokeringtype:i:0');
-    RDPLines.Add('use redirection server name:i:0');
-    RDPLines.Add('rdgiskdcproxy:i:0');
-    RDPLines.Add('kdcproxyname:s:');
-    RDPLines.Add('drivestoredirect:s:*');
-    RDPLines.Add('camerastoredirect:s:*');
-    RDPLines.Add('devicestoredirect:s:*');
-    RDPLines.Add('full address:s:');
-
-    RDPLines.Add('remoteapplicationmode:i:1');
-    RDPLines.Add('remoteapplicationname:s:HCI App Menu');
-    RDPLines.Add('remoteapplicationprogram:s:C:\HCI_ACCOUNTS_MANAGER\TSPLusNada.exe');
-    RDPLines.Add('remoteapplicationcmdline:s:');
-
-    RDPLines.SaveToFile(AppPath + 'server.rdp');
+    // CommandLines.Add('param($username, $password, $servername)');
+    // CommandLines.Add('write-output "Connecting to $servername"');
+    // CommandLines.Add('cmdkey /delete:"$servername"');
+    // CommandLines.Add
+    // ('cmdkey /generic:"$servername" /User: "$username" /pass: "$password"');
+    //
+    // CommandLines.Add('mstsc /v:"$servername" ' + AppPath + '\server.rdp /f');
+    //
+    // CommandLines.Add('write-output "Conexao executada"');
+    //
+    // CommandLines.SaveToFile(AppPath + 'server.ps1');
+    //
+    // // RDPLines.Add('screen mode id:i:2');
+    // RDPLines.Add('use multimon:i:0');
+    // // RDPLines.Add('desktopwidth:i:1920');
+    // // RDPLines.Add('desktopheight:i:1080');
+    // RDPLines.Add('session bpp:i:32');
+    // RDPLines.Add('winposstr:s:0,1,0,0,864,669');
+    // RDPLines.Add('compression:i:1');
+    // RDPLines.Add('keyboardhook:i:2');
+    // RDPLines.Add('audiocapturemode:i:0');
+    // RDPLines.Add('videoplaybackmode:i:1');
+    // RDPLines.Add('connection type:i:7');
+    // RDPLines.Add('networkautodetect:i:1');
+    // RDPLines.Add('bandwidthautodetect:i:1');
+    // RDPLines.Add('displayconnectionbar:i:0');
+    // RDPLines.Add('enableworkspacereconnect:i:0');
+    // RDPLines.Add('disable wallpaper:i:1');
+    // RDPLines.Add('allow font smoothing:i:0');
+    // RDPLines.Add('allow desktop composition:i:0');
+    // RDPLines.Add('disable full window drag:i:1');
+    // RDPLines.Add('disable menu anims:i:1');
+    // RDPLines.Add('disable themes:i:0');
+    // RDPLines.Add('disable cursor setting:i:0');
+    // RDPLines.Add('bitmapcachepersistenable:i:1');
+    // RDPLines.Add('audiomode:i:0');
+    // RDPLines.Add('redirectprinters:i:1');
+    // RDPLines.Add('redirectlocation:i:1');
+    // RDPLines.Add('redirectcomports:i:1');
+    // RDPLines.Add('redirectsmartcards:i:1');
+    // RDPLines.Add('redirectclipboard:i:1');
+    // RDPLines.Add('redirectposdevices:i:0');
+    // RDPLines.Add('autoreconnection enabled:i:1');
+    // RDPLines.Add('authentication level:i:0');
+    // RDPLines.Add('prompt for credentials:i:0');
+    // RDPLines.Add('negotiate security layer:i:1');
+    // RDPLines.Add('alternate shell:s:');
+    // RDPLines.Add('shell working directory:s:');
+    // RDPLines.Add('gatewayhostname:s:');
+    // RDPLines.Add('gatewayusagemethod:i:4');
+    // RDPLines.Add('gatewaycredentialssource:i:4');
+    // RDPLines.Add('gatewayprofileusagemethod:i:0');
+    // RDPLines.Add('promptcredentialonce:i:0');
+    // RDPLines.Add('gatewaybrokeringtype:i:0');
+    // RDPLines.Add('use redirection server name:i:0');
+    // RDPLines.Add('rdgiskdcproxy:i:0');
+    // RDPLines.Add('kdcproxyname:s:');
+    // RDPLines.Add('drivestoredirect:s:*');
+    // RDPLines.Add('camerastoredirect:s:*');
+    // RDPLines.Add('devicestoredirect:s:*');
+    // RDPLines.Add('full address:s:');
+    //
+    // RDPLines.Add('remoteapplicationmode:i:1');
+    // RDPLines.Add('remoteapplicationname:s:HCI App Menu');
+    // RDPLines.Add('remoteapplicationprogram:s:C:\HCI_ACCOUNTS_MANAGER\TSPLusNada.exe');
+    //
+    // //RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\FloatingPanel.exe');
+    // //RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\files\pleasewait.exe');
+    //
+    // RDPLines.Add('remoteapplicationcmdline:s:');
+    //
+    // RDPLines.SaveToFile(AppPath + 'server.rdp');
 
     StatusBar1.Panels[0].Text := 'Conectando ao servidor';
     Application.ProcessMessages;
 
-    PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted "' +
-      AppPath + 'server.ps1"' + ' -username ' + QuotedStr(Username) +
-      ' -password ' + QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
+    // PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted "' +
+    // AppPath + 'server.ps1"' + ' -username ' + QuotedStr(Username) +
+    // ' -password ' + QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
 
-    RunCommand('powershell.exe', PowershellCommand);
+    PowershellCommand := ' -user ' + Username + ' -psw ' + Password +
+      ' -server ' + Server;
+
+    // PowershellCommand := AppPath + ClientTSPlus + ' -user ' +
+    // QuotedStr(Username) + ' -psw ' + QuotedStr(Password) + ' -server ' +
+    // QuotedStr(Server);
+
+    if (DebugExec) then
+      MessageDlg(AppPath + ClientTSPlus + ' ' + PowershellCommand, mtError, [mbOk], 0);
+
+    // ClienteTSlus.exe -user joaopedro -psw 0101 -server 18.229.93.248
+
+    RunCommand(AppPath + ClientTSPlus, PowershellCommand);
 
     StatusBar1.Panels[0].Text := 'Conexão executada';
 
     Application.ProcessMessages;
 
   finally
-
-    CommandLines.Free;
-    RDPLines.Free;
+    //
+    // CommandLines.Free;
+    // RDPLines.Free;
 
   end;
 
@@ -861,8 +902,8 @@ begin
 
   MessageDlg('Token salvo com sucesso.', mtInformation, [mbOk], 0);
 
-  PageControl1.Pages[0].Enabled := True;
-  PageControl1.Pages[1].Enabled := True;
+  PageControl1.Pages[0].Enabled := true;
+  PageControl1.Pages[1].Enabled := true;
 
   AccessServerTest(Token);
 
@@ -884,7 +925,7 @@ begin
 
       if (IgnoreUpdates) then
       begin
-        Result := False;
+        Result := false;
         Exit;
       end;
 
@@ -894,7 +935,8 @@ begin
 
       RemoteVersion := GetUpdateVersion();
 
-      if not(RemoteVersion.equals(AppVersion)) then
+      if (not RemoteVersion.equals(AppVersion) and not RemoteVersion.IsEmpty)
+      then
       begin
 
         StatusBar1.Panels[0].Text := 'Atualização encontrada (v' +
@@ -935,7 +977,7 @@ begin
               RenameFile(AppPath + FileName, AppPath + FileName + '_' +
                 AppVersion);
 
-            CopyFile(PWideChar(FilePath), PWideChar(AppPath + FileName), False);
+            CopyFile(PWideChar(FilePath), PWideChar(AppPath + FileName), false);
 
           end;
 
@@ -954,7 +996,7 @@ begin
 
           end;
 
-          Result := True;
+          Result := true;
 
           MessageDlg
             ('Atualização efetuada com sucesso. Reinicie a aplicação. (v' +
@@ -971,14 +1013,14 @@ begin
         end;
       end
       else
-        Result := False;
+        Result := false;
 
     except
 
       on E: Exception do
       begin
 
-        Result := False;
+        Result := false;
 
         MessageDlg('Erro executando atualização do software ' + E.Message,
           mtError, [mbOk], 0);
@@ -1039,7 +1081,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura * 20;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1050,7 +1092,7 @@ begin
       if (not FileExists(AppPath + 'update_' + RemoteVersion + '\' +
         UpdatePackageName)) then
       begin
-        Result := False;
+        Result := false;
         MessageDlg('Falha efetuando download de atualização. ' + AppPath +
           'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
           [mbOk], 0);
@@ -1059,12 +1101,12 @@ begin
 
       end;
 
-      Result := True;
+      Result := true;
     except
       MessageDlg('Falha efetuando download de atualização. ' + AppPath +
         'update_' + RemoteVersion + '\' + UpdatePackageName, mtError,
         [mbOk], 0);
-      Result := False;
+      Result := false;
     end;
 
   finally
@@ -1128,7 +1170,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1186,7 +1228,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1252,7 +1294,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1339,7 +1381,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1400,9 +1442,9 @@ begin
       EditGroup.Text := GroupServer;
 
       if (StatusServer.equals('Desligado')) then
-        ButtonLigarServer.Enabled := True
+        ButtonLigarServer.Enabled := true
       else
-        ButtonLigarServer.Enabled := False;
+        ButtonLigarServer.Enabled := false;
 
       JSonValue.Free;
 
@@ -1454,7 +1496,7 @@ begin
       Http.ReadTimeout := TimeoutLeitura;
 
       Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := True;
+      Http.HandleRedirects := true;
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
@@ -1470,7 +1512,7 @@ begin
 
       EditServer.Text := 'Ligando';
 
-      Timer1.Enabled := True;
+      Timer1.Enabled := true;
 
       StatusBar1.Panels[0].Text := 'Aguarde, ligando Servidor.';
 
@@ -1518,7 +1560,7 @@ begin
 
   DisconnectServerUser(User);
 
-  ButtonListUsers.Enabled := True;
+  ButtonListUsers.Enabled := true;
 
   Screen.Cursor := crDefault;
 
@@ -1573,7 +1615,7 @@ var
 begin
   retorno := '';
   saSecurity.nLength := SizeOf(TSecurityAttributes);
-  saSecurity.bInheritHandle := True;
+  saSecurity.bInheritHandle := true;
   saSecurity.lpSecurityDescriptor := nil;
 
   if CreatePipe(hRead, hWrite, @saSecurity, 0) then
@@ -1587,7 +1629,7 @@ begin
     suiStartup.wShowWindow := SW_HIDE;
 
     if CreateProcess(nil, PChar(ACommand + ' ' + AParameters), @saSecurity,
-      @saSecurity, True, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess)
+      @saSecurity, true, NORMAL_PRIORITY_CLASS, nil, nil, suiStartup, piProcess)
     then
       // begin
       // repeat
@@ -1626,7 +1668,7 @@ begin
     (CNPJ = '88888888888888') or (CNPJ = '99999999999999') or
     (Length(CNPJ) <> 14)) then
   begin
-    isCNPJ := False;
+    isCNPJ := false;
     Exit;
   end;
 
@@ -1668,11 +1710,11 @@ begin
 
     { Verifica se os digitos calculados conferem com os digitos informados. }
     if ((dig13 = CNPJ[13]) and (dig14 = CNPJ[14])) then
-      isCNPJ := True
+      isCNPJ := true
     else
-      isCNPJ := False;
+      isCNPJ := false;
   except
-    isCNPJ := False
+    isCNPJ := false
   end;
 end;
 
@@ -1707,11 +1749,13 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '5';
+THCIAwsSecManCli.AppVersion := '7';
 
-THCIAwsSecManCli.IgnoreUpdates := False;
+THCIAwsSecManCli.IgnoreUpdates := false;
 
-THCIAwsSecManCli.HasAdminRights := False;
+THCIAwsSecManCli.HasAdminRights := false;
+
+THCIAwsSecManCli.DebugExec := false;
 
 THCIAwsSecManCli.TimeoutConexao := 5000;
 THCIAwsSecManCli.TimeoutLeitura := 60000;
@@ -1719,6 +1763,8 @@ THCIAwsSecManCli.TimeoutLeitura := 60000;
 THCIAwsSecManCli.AppIniFile := 'hciconfig.ini';
 
 THCIAwsSecManCli.UpdatePackageName := 'package.zip';
+
+THCIAwsSecManCli.ClientTSPlus := 'ClientTSPlus.exe';
 
 THCIAwsSecManCli.URLS3Version :=
   'http://hci-aws-sec-man-cli-updates.s3-website-us-east-1.amazonaws.com/CurrentVersion.json';

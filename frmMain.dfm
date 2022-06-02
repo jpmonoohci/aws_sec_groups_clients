@@ -11630,7 +11630,9 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Width = 100
       end>
     ParentBiDiMode = False
-    SimpleText = #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9
+    SimpleText = 
+      #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9 +
+      #9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0
@@ -23213,14 +23215,14 @@ object HCIAwsSecManCli: THCIAwsSecManCli
           E0070000E0030000C00100008001000080000000000000000000000000000000
           800000008001000080010000C0030000E0070000F00F0000FC3F0000}
       end
-      object ButtonLogin: TButton
+      object ButtonExecutarHCI: TButton
         Left = 21
         Top = 208
         Width = 121
         Height = 25
         Caption = 'Executar HCI'
         TabOrder = 0
-        OnClick = ButtonLoginClick
+        OnClick = ButtonExecutarHCIClick
       end
       object EditUserName: TEdit
         Left = 116
@@ -23239,16 +23241,16 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TabOrder = 2
       end
       object StaticText2: TStaticText
-        Left = 21
-        Top = 51
+        Left = 24
+        Top = 22
         Width = 93
         Height = 17
         Caption = 'Status do Servidor'
         TabOrder = 3
       end
       object EditServer: TEdit
-        Left = 21
-        Top = 74
+        Left = 24
+        Top = 45
         Width = 121
         Height = 21
         Alignment = taCenter
@@ -23258,8 +23260,8 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         OnChange = EditServerChange
       end
       object ButtonLigarServer: TButton
-        Left = 21
-        Top = 101
+        Left = 24
+        Top = 72
         Width = 121
         Height = 25
         Caption = 'Ligar Servidor'
@@ -23268,8 +23270,8 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         OnClick = ButtonLigarServerClick
       end
       object ButtonAtualizarStatusServer: TButton
-        Left = 148
-        Top = 72
+        Left = 151
+        Top = 45
         Width = 121
         Height = 25
         Caption = 'Atualizar Status'
@@ -23284,6 +23286,15 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Caption = 'Executar HCI Web'
         TabOrder = 7
         OnClick = ButtonLoginWebClick
+      end
+      object ButtonTesteConexao: TButton
+        Left = 24
+        Top = 103
+        Width = 118
+        Height = 25
+        Caption = 'Teste sua conex'#227'o'
+        TabOrder = 8
+        OnClick = ButtonTesteConexaoClick
       end
     end
     object TabSheet2: TTabSheet
@@ -23322,10 +23333,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label2: TLabel
         Left = 16
         Top = 150
