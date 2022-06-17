@@ -11620,10 +11620,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
   object StatusBar1: TStatusBar
     AlignWithMargins = True
     Left = 3
-    Top = 287
+    Top = 280
     Width = 344
-    Height = 19
-    BiDiMode = bdRightToLeft
+    Height = 26
+    BiDiMode = bdLeftToRight
     BorderWidth = 1
     Panels = <
       item
@@ -11632,7 +11632,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     ParentBiDiMode = False
     SimpleText = 
       #9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9#9 +
-      #9#9#9#9
+      #9#9#9#9#9#9#9#9
   end
   object PageControl1: TPageControl
     Left = 0
@@ -23336,9 +23336,9 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       object Label2: TLabel
         Left = 16
         Top = 150
-        Width = 14
+        Width = 49
         Height = 13
-        Caption = 'IP:'
+        Caption = 'Server IP:'
       end
       object Label3: TLabel
         Left = 16
@@ -23350,9 +23350,9 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       object Label4: TLabel
         Left = 16
         Top = 176
-        Width = 36
+        Width = 65
         Height = 13
-        Caption = 'Server:'
+        Caption = 'Server name:'
       end
       object Label1: TLabel
         Left = 16
@@ -23403,7 +23403,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TabOrder = 4
       end
       object EditVersion: TEdit
-        Left = 59
+        Left = 87
         Top = 222
         Width = 54
         Height = 21
@@ -23412,15 +23412,15 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TabOrder = 5
       end
       object EditName: TEdit
-        Left = 59
+        Left = 87
         Top = 168
-        Width = 270
+        Width = 242
         Height = 21
         ReadOnly = True
         TabOrder = 6
       end
       object EditIP: TEdit
-        Left = 59
+        Left = 87
         Top = 141
         Width = 118
         Height = 21
@@ -23428,7 +23428,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TabOrder = 7
       end
       object EditGroup: TEdit
-        Left = 59
+        Left = 87
         Top = 195
         Width = 118
         Height = 21

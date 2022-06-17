@@ -11,7 +11,7 @@ uses
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
   System.JSON, Vcl.ComCtrls, IniFiles, Vcl.Imaging.pngimage, Vcl.Imaging.jpeg,
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
-  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus;
+  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -485,8 +485,6 @@ begin
 
       lURL := 'http://' + ServerIP + ':9998/PingServer';
 
-      lURL := 'http://aws18.hci.com.br:9998/PingServer';
-
       Http := TIdHTTP.Create(nil);
 
       Http.Request.CustomHeaders.AddValue('Authorization',
@@ -604,6 +602,7 @@ var
   ServerStatus: String;
   Token: String;
   hashClient: String;
+  ContaPing: Integer;
 begin
 
   ServerStatus := EditServer.Text;
@@ -636,6 +635,36 @@ begin
   ButtonListUsers.Enabled := false;
   Screen.Cursor := crHourglass;
 
+  ContaPing := 1;
+  while (ContaPing < 20) do
+  begin
+
+    Application.ProcessMessages;
+
+    if PingServer() then
+      break;
+
+    Application.ProcessMessages;
+
+    sleep(10);
+
+    ContaPing := ContaPing + 1;
+
+  end;
+
+  Screen.Cursor := crDefault;
+
+  Application.ProcessMessages;
+
+  if (ContaPing >= 20) then
+  begin
+
+    MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
+      mtError, [mbOk], 0);
+    ButtonListUsers.Enabled := false;
+    Exit();
+  end;
+
   ListServerUsers();
 
   ButtonListUsers.Enabled := true;
@@ -650,11 +679,11 @@ var
   ServerStatus: String;
   Token: String;
   hashClient: String;
-  // CommandLines: TStringlist;
-  // RDPLines: TStringlist;
-  PowershellCommand: String;
+  ParametersCommand: String;
   ContaPing: Integer;
 begin
+
+  ButtonExecutarHCI.Enabled := false;
 
   Server := ServerIP;
 
@@ -664,6 +693,8 @@ begin
 
   if (Username.Trim.IsEmpty) then
   begin
+
+    ButtonExecutarHCI.Enabled := true;
     MessageDlg('Digite o Username e clique em Executar HCI.', mtError,
       [mbOk], 0);
     Exit();
@@ -675,6 +706,7 @@ begin
 
   if (not ServerStatus.equals('Ligado')) then
   begin
+    ButtonExecutarHCI.Enabled := true;
     MessageDlg('Por favor, antes ligue seu servidor.', mtError, [mbOk], 0);
     Exit();
   end;
@@ -688,6 +720,7 @@ begin
   end
   else
   begin
+    ButtonExecutarHCI.Enabled := true;
     MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
     Exit();
   end;
@@ -717,118 +750,38 @@ begin
 
   if (ContaPing >= 20) then
   begin
-
+    ButtonExecutarHCI.Enabled := true;
     MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
       mtError, [mbOk], 0);
     Exit();
   end;
 
-  // CommandLines := TStringlist.Create;
-  // RDPLines := TStringlist.Create;
   try
-
-    // CommandLines.Add('param($username, $password, $servername)');
-    // CommandLines.Add('write-output "Connecting to $servername"');
-    // CommandLines.Add('cmdkey /delete:"$servername"');
-    // CommandLines.Add
-    // ('cmdkey /generic:"$servername" /User: "$username" /pass: "$password"');
-    //
-    // CommandLines.Add('mstsc /v:"$servername" ' + AppPath + '\server.rdp /f');
-    //
-    // CommandLines.Add('write-output "Conexao executada"');
-    //
-    // CommandLines.SaveToFile(AppPath + 'server.ps1');
-    //
-    // // RDPLines.Add('screen mode id:i:2');
-    // RDPLines.Add('use multimon:i:0');
-    // // RDPLines.Add('desktopwidth:i:1920');
-    // // RDPLines.Add('desktopheight:i:1080');
-    // RDPLines.Add('session bpp:i:32');
-    // RDPLines.Add('winposstr:s:0,1,0,0,864,669');
-    // RDPLines.Add('compression:i:1');
-    // RDPLines.Add('keyboardhook:i:2');
-    // RDPLines.Add('audiocapturemode:i:0');
-    // RDPLines.Add('videoplaybackmode:i:1');
-    // RDPLines.Add('connection type:i:7');
-    // RDPLines.Add('networkautodetect:i:1');
-    // RDPLines.Add('bandwidthautodetect:i:1');
-    // RDPLines.Add('displayconnectionbar:i:0');
-    // RDPLines.Add('enableworkspacereconnect:i:0');
-    // RDPLines.Add('disable wallpaper:i:1');
-    // RDPLines.Add('allow font smoothing:i:0');
-    // RDPLines.Add('allow desktop composition:i:0');
-    // RDPLines.Add('disable full window drag:i:1');
-    // RDPLines.Add('disable menu anims:i:1');
-    // RDPLines.Add('disable themes:i:0');
-    // RDPLines.Add('disable cursor setting:i:0');
-    // RDPLines.Add('bitmapcachepersistenable:i:1');
-    // RDPLines.Add('audiomode:i:0');
-    // RDPLines.Add('redirectprinters:i:1');
-    // RDPLines.Add('redirectlocation:i:1');
-    // RDPLines.Add('redirectcomports:i:1');
-    // RDPLines.Add('redirectsmartcards:i:1');
-    // RDPLines.Add('redirectclipboard:i:1');
-    // RDPLines.Add('redirectposdevices:i:0');
-    // RDPLines.Add('autoreconnection enabled:i:1');
-    // RDPLines.Add('authentication level:i:0');
-    // RDPLines.Add('prompt for credentials:i:0');
-    // RDPLines.Add('negotiate security layer:i:1');
-    // RDPLines.Add('alternate shell:s:');
-    // RDPLines.Add('shell working directory:s:');
-    // RDPLines.Add('gatewayhostname:s:');
-    // RDPLines.Add('gatewayusagemethod:i:4');
-    // RDPLines.Add('gatewaycredentialssource:i:4');
-    // RDPLines.Add('gatewayprofileusagemethod:i:0');
-    // RDPLines.Add('promptcredentialonce:i:0');
-    // RDPLines.Add('gatewaybrokeringtype:i:0');
-    // RDPLines.Add('use redirection server name:i:0');
-    // RDPLines.Add('rdgiskdcproxy:i:0');
-    // RDPLines.Add('kdcproxyname:s:');
-    // RDPLines.Add('drivestoredirect:s:*');
-    // RDPLines.Add('camerastoredirect:s:*');
-    // RDPLines.Add('devicestoredirect:s:*');
-    // RDPLines.Add('full address:s:');
-    //
-    // RDPLines.Add('remoteapplicationmode:i:1');
-    // RDPLines.Add('remoteapplicationname:s:HCI App Menu');
-    // RDPLines.Add('remoteapplicationprogram:s:C:\HCI_ACCOUNTS_MANAGER\TSPLusNada.exe');
-    //
-    // //RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\FloatingPanel.exe');
-    // //RDPLines.Add('remoteapplicationprogram:s:C:\Program Files (x86)\TSplus\UserDesktop\files\pleasewait.exe');
-    //
-    // RDPLines.Add('remoteapplicationcmdline:s:');
-    //
-    // RDPLines.SaveToFile(AppPath + 'server.rdp');
 
     StatusBar1.Panels[0].Text := 'Conectando ao servidor';
     Application.ProcessMessages;
 
-    // PowershellCommand := '-NonInteractive -ExecutionPolicy Unrestricted "' +
-    // AppPath + 'server.ps1"' + ' -username ' + QuotedStr(Username) +
-    // ' -password ' + QuotedStr(Password) + ' -servername ' + QuotedStr(Server);
-
-    PowershellCommand := ' -user ' + Username + ' -psw ' + Password +
+    ParametersCommand := ' -user ' + Username + ' -psw ' + Password +
       ' -server ' + Server;
 
-    // PowershellCommand := AppPath + ClientTSPlus + ' -user ' +
-    // QuotedStr(Username) + ' -psw ' + QuotedStr(Password) + ' -server ' +
-    // QuotedStr(Server);
-
     if (DebugExec) then
-      MessageDlg(AppPath + ClientTSPlus + ' ' + PowershellCommand, mtError, [mbOk], 0);
+    begin
 
-    // ClienteTSlus.exe -user joaopedro -psw 0101 -server 18.229.93.248
+      Clipboard.AsText := AppPath + ClientTSPlus + ' ' + ParametersCommand;
 
-    RunCommand(AppPath + ClientTSPlus, PowershellCommand);
+      MessageDlg(AppPath + ClientTSPlus + ' ' + ParametersCommand,
+        mtInformation, [mbOk], 0);
+    end;
 
-    StatusBar1.Panels[0].Text := 'Conexão executada';
+    RunCommand(AppPath + ClientTSPlus, ParametersCommand);
+
+    StatusBar1.Panels[0].Text := 'Conexão executada.';
+
+    ButtonExecutarHCI.Enabled := true;
 
     Application.ProcessMessages;
 
   finally
-    //
-    // CommandLines.Free;
-    // RDPLines.Free;
 
   end;
 
@@ -1749,7 +1702,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '7';
+THCIAwsSecManCli.AppVersion := '8';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 
