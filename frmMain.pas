@@ -11,7 +11,7 @@ uses
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
   System.JSON, Vcl.ComCtrls, IniFiles, Vcl.Imaging.pngimage, Vcl.Imaging.jpeg,
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
-  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd;
+  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -55,6 +55,7 @@ type
     EditGroup: TEdit;
     Label1: TLabel;
     ButtonTesteConexao: TButton;
+    TabSheet4: TTabSheet;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -94,6 +95,7 @@ type
     procedure DesconectarUsurio1Click(Sender: TObject);
     procedure EditServerChange(Sender: TObject);
     procedure ButtonTesteConexaoClick(Sender: TObject);
+    procedure PageControl1Change(Sender: TObject);
 
   private
 
@@ -454,6 +456,33 @@ begin
     Http.Disconnect;
     FreeAndNil(SSLIO);
     FreeAndNil(Http);
+
+  end;
+
+end;
+
+procedure THCIAwsSecManCli.PageControl1Change(Sender: TObject);
+var
+  FormLogin: TForm;
+  RetornoLogin: Integer;
+begin
+
+  if (PageControl1.ActivePageIndex = 3) then
+  begin
+
+    FormLogin := TLogin.Create(self);
+
+
+    // AForm.Left := AParent.Left + (AParent.Width - AForm.Width) div 2;
+    // AForm.Top  := AParent.Top + (AParent.Height - AForm.Height) div 2;
+
+    try
+      FormLogin.ShowModal;
+      RetornoLogin := FormLogin.ModalResult;
+
+    finally
+      FormLogin.Free;
+    end;
 
   end;
 

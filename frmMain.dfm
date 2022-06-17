@@ -11639,8 +11639,9 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet1
+    ActivePage = TabSheet4
     TabOrder = 5
+    OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
       object Image1: TImage
@@ -23435,6 +23436,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         ReadOnly = True
         TabOrder = 8
       end
+    end
+    object TabSheet4: TTabSheet
+      Caption = 'Financeiro'
+      ImageIndex = 3
     end
   end
   object IdHTTP1: TIdHTTP
