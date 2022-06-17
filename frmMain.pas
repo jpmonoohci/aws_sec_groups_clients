@@ -121,6 +121,8 @@ type
     class var HasAdminRights: Boolean;
     class var ClientTSPlus: String;
     class var DebugExec: Boolean;
+    class var LoggedOnPortal: Boolean;
+    class var URLServicoLoginPortal: String;
 
   end;
 
@@ -463,22 +465,27 @@ end;
 
 procedure THCIAwsSecManCli.PageControl1Change(Sender: TObject);
 var
-  FormLogin: TForm;
+  FormLogin: TLogin;
   RetornoLogin: Integer;
 begin
 
-  if (PageControl1.ActivePageIndex = 3) then
+  if ((PageControl1.ActivePageIndex = 3) and (LoggedOnPortal = false)) then
   begin
 
     FormLogin := TLogin.Create(self);
+    FormLogin.AppToken := AppToken;
 
-
-    // AForm.Left := AParent.Left + (AParent.Width - AForm.Width) div 2;
-    // AForm.Top  := AParent.Top + (AParent.Height - AForm.Height) div 2;
+    FormLogin.TimeoutConexao := TimeoutConexao;
+    FormLogin.TimeoutLeitura := TimeoutLeitura;
 
     try
       FormLogin.ShowModal;
       RetornoLogin := FormLogin.ModalResult;
+
+      if (RetornoLogin = mrOk) then
+        LoggedOnPortal := true
+      else
+        PageControl1.ActivePageIndex := 0;
 
     finally
       FormLogin.Free;
@@ -1739,6 +1746,8 @@ THCIAwsSecManCli.HasAdminRights := false;
 
 THCIAwsSecManCli.DebugExec := false;
 
+THCIAwsSecManCli.LoggedOnPortal := false;
+
 THCIAwsSecManCli.TimeoutConexao := 5000;
 THCIAwsSecManCli.TimeoutLeitura := 60000;
 
@@ -1765,6 +1774,7 @@ THCIAwsSecManCli.URLServicoStatusServer :=
 
 THCIAwsSecManCli.URLServicoStartServer :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
+
 
 // THCIAwsSecManCli.URLServicoStatusServer :=
 // 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';

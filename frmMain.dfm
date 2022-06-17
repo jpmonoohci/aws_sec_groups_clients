@@ -11644,6 +11644,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Image1: TImage
         Left = 286
         Top = 3
@@ -23334,6 +23338,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label2: TLabel
         Left = 16
         Top = 150

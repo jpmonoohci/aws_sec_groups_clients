@@ -13,6 +13,7 @@ object Login: TLogin
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
+  OnActivate = FormActivate
   PixelsPerInch = 96
   TextHeight = 13
   object ButtonLogin: TButton
@@ -21,6 +22,7 @@ object Login: TLogin
     Width = 75
     Height = 25
     Caption = 'Login'
+    Default = True
     TabOrder = 0
     OnClick = ButtonLoginClick
   end
@@ -96,5 +98,22 @@ object Login: TLogin
     PasswordChar = '*'
     TabOrder = 7
     Text = ''
+  end
+  object IdHTTP1: TIdHTTP
+    AllowCookies = True
+    ProxyParams.BasicAuthentication = False
+    ProxyParams.ProxyPort = 0
+    Request.ContentLength = -1
+    Request.ContentRangeEnd = -1
+    Request.ContentRangeStart = -1
+    Request.ContentRangeInstanceLength = -1
+    Request.Accept = 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+    Request.BasicAuthentication = False
+    Request.UserAgent = 'Mozilla/3.0 (compatible; Indy Library)'
+    Request.Ranges.Units = 'bytes'
+    Request.Ranges = <>
+    HTTPOptions = [hoForceEncodeParams]
+    Left = 8
+    Top = 112
   end
 end
