@@ -11579,7 +11579,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     0000C00100008001000080000000000000000000000000000000800000008001
     000080010000C0030000E0070000F00F0000FC3F0000}
   OldCreateOrder = False
-  Position = poDesktopCenter
+  Position = poScreenCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
@@ -23300,6 +23300,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet2: TTabSheet
       Caption = 'Usu'#225'rios'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object ListBoxUser: TListBox
         Left = 21
         Top = 18
@@ -23333,6 +23337,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label2: TLabel
         Left = 16
         Top = 150
