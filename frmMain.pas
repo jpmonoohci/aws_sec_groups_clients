@@ -1912,8 +1912,14 @@ begin
       end;
 
     except
-      MessageDlg('Erro efetuando download', mtError, [mbOk], 0);
-      Result := false;
+      on E: Exception do
+      begin
+
+        MessageDlg('Erro efetuando download ' + E.Message, mtError, [mbOk], 0);
+        Result := false;
+
+      end;
+
     end;
 
   finally
