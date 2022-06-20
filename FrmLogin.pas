@@ -118,6 +118,7 @@ var
   SSLIO: TIdSSLIOHandlerSocketOpenSSL;
   Http: TIdHTTP;
   i: Integer;
+  CNPJ: String;
 
 begin
 
@@ -177,7 +178,12 @@ begin
         NomesFiliais.Add(JSonValue.Value);
 
         JSonValue := GrupoCNPJObj.Get(1).JSonValue;
-        CNPJsFiliais.Add(JSonValue.Value);
+        CNPJ := JSonValue.Value;
+        CNPJ := StringReplace(CNPJ, '.', '', [rfReplaceAll, rfIgnoreCase]);
+        CNPJ := StringReplace(CNPJ, '/', '', [rfReplaceAll, rfIgnoreCase]);
+        CNPJ := StringReplace(CNPJ, '-', '', [rfReplaceAll, rfIgnoreCase]);
+
+        CNPJsFiliais.Add(CNPJ);
 
       end;
 

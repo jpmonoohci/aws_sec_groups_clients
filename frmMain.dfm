@@ -11609,14 +11609,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Caption = 'Testar Conex'#227'o'
     TabOrder = 2
   end
-  object ButtonAtualizacao: TButton
-    Left = 256
-    Top = 127
-    Width = 89
-    Height = 25
-    Caption = 'Testar Execu'#231#227'o'
-    TabOrder = 3
-  end
   object StatusBar1: TStatusBar
     AlignWithMargins = True
     Left = 3
@@ -11640,7 +11632,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Width = 637
     Height = 286
     ActivePage = TabSheet4
-    TabOrder = 5
+    TabOrder = 4
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
@@ -23442,7 +23434,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       ImageIndex = 3
       object DBGrid1: TDBGrid
         Left = 3
-        Top = 23
+        Top = 55
         Width = 338
         Height = 137
         DataSource = FaturasDataSource
@@ -23454,6 +23446,16 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TitleFont.Style = []
         OnCellClick = DBGrid1CellClick
         OnDrawColumnCell = DBGrid1DrawColumnCell
+      end
+      object ComboBoxCNPJ: TComboBox
+        Left = 3
+        Top = 20
+        Width = 145
+        Height = 21
+        AutoComplete = False
+        Style = csDropDownList
+        TabOrder = 1
+        OnChange = ComboBoxCNPJChange
       end
     end
   end

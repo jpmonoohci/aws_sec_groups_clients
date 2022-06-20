@@ -22,7 +22,6 @@ type
     MaskEdit1: TMaskEdit;
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
-    ButtonAtualizacao: TButton;
     StatusBar1: TStatusBar;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
@@ -68,6 +67,7 @@ type
     FaturasDataSetXML: TStringField;
     ImageList1: TImageList;
     FaturasDataSetPDF: TStringField;
+    ComboBoxCNPJ: TComboBox;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -113,6 +113,7 @@ type
     procedure DBGrid1DrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
     function DownloadFile(URL: String; ArquivoDestino: String): Boolean;
+    procedure ComboBoxCNPJChange(Sender: TObject);
 
   private
 
@@ -142,6 +143,9 @@ type
     class var LoggedOnPortal: Boolean;
     class var URLServicoLoginPortal: String;
     class var CNPJCliente: String;
+    class var NomeCliente: String;
+    class var CNPJsFiliais: TStringList;
+    class var NomesFiliais: TStringList;
 
   end;
 
@@ -486,6 +490,8 @@ procedure THCIAwsSecManCli.PageControl1Change(Sender: TObject);
 var
   FormLogin: TLogin;
   RetornoLogin: Integer;
+  I: Integer;
+
 begin
 
   if ((PageControl1.ActivePageIndex = 3) and (LoggedOnPortal = false)) then
@@ -504,9 +510,29 @@ begin
       if (RetornoLogin = mrOk) then
       begin
         LoggedOnPortal := true;
-        CNPJCliente := FormLogin.CNPJCliente;
 
+        CNPJCliente := FormLogin.CNPJCliente;
+        NomeCliente := FormLogin.NomeCliente;
+
+        if (Assigned(CNPJsFiliais)) then
+        begin
+          CNPJsFiliais.Clear;
+          NomesFiliais.Clear;
+        end;
+
+        ComboBoxCNPJ.AddItem(NomeCliente, nil);
+
+        NomesFiliais := FormLogin.NomesFiliais;
+        CNPJsFiliais := FormLogin.CNPJsFiliais;
+
+        for I := 0 to NomesFiliais.Count - 1 do
+        begin
+          ComboBoxCNPJ.AddItem(NomesFiliais[I], nil);
+        end;
+
+        ComboBoxCNPJ.ItemIndex := 0;
         CarregaFaturas(CNPJCliente);
+
       end
       else
         PageControl1.ActivePageIndex := 0;
@@ -563,6 +589,16 @@ begin
       Http.Get(lURL, lResponse);
 
       Resposta := UTF8Decode(lResponse.DataString);
+
+      if (Resposta.IsEmpty) then
+      begin
+
+        StatusBar1.Panels[0].Text := 'Empresa não possui faturas';
+
+        Application.ProcessMessages;
+
+        Exit();
+      end;
 
       JSonObj := TJSonObject.ParseJSONValue(Resposta) as TJSonObject;
 
@@ -627,6 +663,21 @@ begin
     FreeAndNil(Http);
 
   end;
+
+end;
+
+procedure THCIAwsSecManCli.ComboBoxCNPJChange(Sender: TObject);
+var
+  CNPJ: String;
+begin
+
+  if (ComboBoxCNPJ.ItemIndex > 0) then
+  begin
+    CNPJ := CNPJsFiliais[ComboBoxCNPJ.ItemIndex - 1];
+    CarregaFaturas(CNPJ);
+  end
+  else
+    CarregaFaturas(CNPJCliente);
 
 end;
 
@@ -2171,5 +2222,8 @@ THCIAwsSecManCli.URLServicoStartServer :=
 
 THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
+
+// THCIAwsSecManCli.CNPJsFiliais := TStringList.Create;
+// THCIAwsSecManCli.NomesFiliais := TStringList.Create;
 
 end.
