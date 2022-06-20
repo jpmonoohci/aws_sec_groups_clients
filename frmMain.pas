@@ -11,7 +11,9 @@ uses
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
   System.JSON, Vcl.ComCtrls, IniFiles, Vcl.Imaging.pngimage, Vcl.Imaging.jpeg,
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
-  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin;
+  IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin, Data.DB,
+  Vcl.Grids, Vcl.DBGrids, Datasnap.DBClient, Datasnap.Provider,
+  System.ImageList, Vcl.ImgList, FileCtrl;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -56,6 +58,16 @@ type
     Label1: TLabel;
     ButtonTesteConexao: TButton;
     TabSheet4: TTabSheet;
+    FaturasDataSet: TClientDataSet;
+    FaturasDataSource: TDataSource;
+    DBGrid1: TDBGrid;
+    FaturasDataSetData: TStringField;
+    FaturasDataSetDocumento: TStringField;
+    FaturasDataSetValor: TStringField;
+    FaturasDataSetBoleto: TStringField;
+    FaturasDataSetXML: TStringField;
+    ImageList1: TImageList;
+    FaturasDataSetPDF: TStringField;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -96,6 +108,11 @@ type
     procedure EditServerChange(Sender: TObject);
     procedure ButtonTesteConexaoClick(Sender: TObject);
     procedure PageControl1Change(Sender: TObject);
+    procedure CarregaFaturas(CNPJ: String);
+    procedure DBGrid1CellClick(Column: TColumn);
+    procedure DBGrid1DrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    function DownloadFile(URL: String; ArquivoDestino: String): Boolean;
 
   private
 
@@ -111,6 +128,7 @@ type
     class var URLServicoAWSSecMan: String;
     class var URLServicoStartServer: String;
     class var URLServicoStatusServer: String;
+    class var URLServicoBuscaFaturas: String;
     class var ServerIP: String;
     class var ServerGroup: String;
     class var TimeoutConexao: Integer;
@@ -123,6 +141,7 @@ type
     class var DebugExec: Boolean;
     class var LoggedOnPortal: Boolean;
     class var URLServicoLoginPortal: String;
+    class var CNPJCliente: String;
 
   end;
 
@@ -483,13 +502,129 @@ begin
       RetornoLogin := FormLogin.ModalResult;
 
       if (RetornoLogin = mrOk) then
-        LoggedOnPortal := true
+      begin
+        LoggedOnPortal := true;
+        CNPJCliente := FormLogin.CNPJCliente;
+
+        CarregaFaturas(CNPJCliente);
+      end
       else
         PageControl1.ActivePageIndex := 0;
 
     finally
       FormLogin.Free;
     end;
+
+  end;
+
+end;
+
+procedure THCIAwsSecManCli.CarregaFaturas(CNPJ: String);
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  RetornoChamada: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+  JSonObj: TJSonObject;
+  JSonArray: TJSONArray;
+  I: Integer;
+  FaturaObj: TJSonObject;
+  JSonValue: TJSonValue;
+
+  Teste: String;
+
+begin
+
+  StatusBar1.Panels[0].Text := 'Buscando faturas';
+
+  Application.ProcessMessages;
+
+  FaturasDataSet.EmptyDataSet;
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoBuscaFaturas + CNPJ;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      Resposta := UTF8Decode(lResponse.DataString);
+
+      JSonObj := TJSonObject.ParseJSONValue(Resposta) as TJSonObject;
+
+      JSonValue := JSonObj.Get('Faturas').JSonValue;
+
+      JSonArray := JSonValue as TJSONArray;
+
+      for I := 0 to JSonArray.Size - 1 do
+      begin
+
+        FaturaObj := (JSonArray.Get(I) as TJSonObject);
+
+        FaturasDataSet.Append;
+
+        JSonValue := FaturaObj.Get(3).JSonValue;
+
+        FaturasDataSetData.AsString := JSonValue.Value;
+
+        JSonValue := FaturaObj.Get(1).JSonValue;
+        FaturasDataSetDocumento.AsString := JSonValue.Value;
+
+        JSonValue := FaturaObj.Get(2).JSonValue;
+        FaturasDataSetValor.AsString := JSonValue.Value;
+
+        JSonValue := FaturaObj.Get(4).JSonValue;
+        FaturasDataSetBoleto.AsString := JSonValue.Value;
+
+        JSonValue := FaturaObj.Get(5).JSonValue;
+        FaturasDataSetPDF.AsString := JSonValue.Value;
+
+        JSonValue := FaturaObj.Get(9).JSonValue;
+        FaturasDataSetXML.AsString := JSonValue.Value;
+
+        FaturasDataSet.Post;
+
+      end;
+
+      FaturasDataSet.First;
+
+      JSonObj.Free;
+
+      StatusBar1.Panels[0].Text := 'Busca de faturas efetuada';
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro buscando faturas ' + E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
 
   end;
 
@@ -1724,6 +1859,259 @@ begin
   Result := Result + StringOfChar('0', 6 - Length(us)) + us;
 end;
 
+function THCIAwsSecManCli.DownloadFile(URL: String;
+  ArquivoDestino: String): Boolean;
+var
+  fileDownload: TFileStream;
+  lURL: String;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+begin
+  try
+
+    try
+
+      StatusBar1.Panels[0].Text := 'Baixando arquivo';
+
+      Application.ProcessMessages;
+
+      fileDownload := TFileStream.Create(ArquivoDestino, fmCreate);
+
+      lURL := URL;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura * 20;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, fileDownload);
+
+      StatusBar1.Panels[0].Text := '';
+
+      Application.ProcessMessages;
+
+      if (not FileExists(ArquivoDestino)) then
+      begin
+        Result := false;
+        MessageDlg('Erro efetuando download', mtError, [mbOk], 0);
+        Exit;
+      end
+      else
+      begin
+        Result := true;
+        MessageDlg('Arquivo salvo em ' + ArquivoDestino, mtInformation,
+          [mbOk], 0);
+        Exit;
+      end;
+
+    except
+      MessageDlg('Erro efetuando download', mtError, [mbOk], 0);
+      Result := false;
+    end;
+
+  finally
+    FreeAndNil(fileDownload);
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+end;
+
+procedure THCIAwsSecManCli.DBGrid1CellClick(Column: TColumn);
+var
+  InitialDir: String;
+  DownloadDir: String;
+  ArquivoDestino: String;
+  URL: String;
+begin
+
+  DownloadDir := '';
+  ArquivoDestino := '';
+
+  if (Column.Index < 3) or (Column.Index > 5) then
+    Exit();
+
+  InitialDir := GetEnvironmentVariable('USERPROFILE') + '\Downloads';
+
+  if Win32MajorVersion >= 6 then
+    with TFileOpenDialog.Create(nil) do
+      try
+        Title := 'Selecione a pasta destino';
+        Options := [fdoPickFolders, fdoPathMustExist, fdoForceFileSystem];
+        OkButtonLabel := 'Selecione';
+        DefaultFolder := InitialDir;
+        FileName := '';
+        if Execute then
+          DownloadDir := FileName;
+      finally
+        Free;
+      end
+  else if SelectDirectory('Selecione a pasta destino', InitialDir, InitialDir,
+    [sdNewUI, sdNewFolder]) then
+  begin
+    DownloadDir := InitialDir;
+  end;
+
+  if (DownloadDir = '') then
+    Exit();
+
+  if (Column.Index = 3) then
+  begin
+    ArquivoDestino := DownloadDir + '\boleto_' +
+      FaturasDataSetDocumento.AsString + '.pdf';
+    URL := FaturasDataSetBoleto.AsString;
+  end
+  else if (Column.Index = 4) then
+  begin
+    ArquivoDestino := DownloadDir + '\NFSE_' +
+      FaturasDataSetDocumento.AsString + '.pdf';
+    URL := FaturasDataSetPDF.AsString;
+  end
+  else
+  begin
+    ArquivoDestino := DownloadDir + '\XML_NFSE__' +
+      FaturasDataSetDocumento.AsString + '.xml';
+    URL := FaturasDataSetXML.AsString;
+  end;
+
+  DownloadFile(URL, ArquivoDestino);
+
+end;
+
+procedure THCIAwsSecManCli.DBGrid1DrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn; State: TGridDrawState);
+Var
+  xValue: Variant;
+  Bitmap: TBitmap;
+  fixRect: TRect;
+  bmpWidth: Integer;
+  imgIndex: Integer;
+  vvLargura, vvLeft: Integer;
+begin
+  vvLargura := 25;
+  vvLeft := 1;
+
+  if not odd(DBGrid1.DataSource.DataSet.RecNo) then // se for ímpar
+  begin
+    if not(gdSelected in State) then // se a célula não está selecionada
+    begin
+      DBGrid1.Canvas.Brush.Color := $00D2FFFF; // define uma cor de fundo
+    end;
+  end
+  else
+  begin
+    if not(gdSelected in State) then
+    // se a célula não está selecionada
+    begin
+      DBGrid1.Canvas.Brush.Color := clWhite; // define uma cor de fundo
+    end;
+  end;
+
+  If gdSelected in State Then
+    DBGrid1.Canvas.Brush.Color := claqua;
+
+  IF (not FaturasDataSetData.AsString.IsEmpty) then
+  begin
+    if FaturasDataSetData.asdatetime < Date() then
+      DBGrid1.Canvas.Font.Color := clRed
+    Else
+      DBGrid1.Canvas.Font.Color := clBlack;
+  end
+  else
+    DBGrid1.Canvas.Font.Color := clBlack;
+
+  if Column.Field.Value = Null then
+  begin
+    if Column.Field.DataType in [FtFloat, ftInteger] then
+      xValue := 0
+    else
+      xValue := ''
+  end
+  else
+    xValue := Column.Field.Value;
+
+  if Column.Field.DataType in [FtFloat, ftInteger] then
+    // xValue := ALLTRIM(formata(strtofloat(xValue), Column.Field.DisplayWidth, Column.Field.Tag))
+  else
+    xValue := Column.Field.AsString;
+
+  DBGrid1.Canvas.FillRect(Rect);
+
+  fixRect := Rect;
+  if UpperCase(Column.FieldName) = 'BOLETO' then
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      ImageList1.GetBitmap(0, Bitmap);
+      bmpWidth := vvLargura + 4;
+      fixRect.Left := Rect.Left + 10;
+      fixRect.Right := Rect.Left + bmpWidth;
+      if Bitmap <> nil then
+        DBGrid1.Canvas.StretchDraw(fixRect, Bitmap);
+    finally
+      Bitmap.Free;
+    end;
+    fixRect := Rect;
+    fixRect.Left := fixRect.Left + bmpWidth;
+  end;
+  fixRect := Rect;
+
+  if UpperCase(Column.FieldName) = 'PDF' then
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      ImageList1.GetBitmap(1, Bitmap);
+      bmpWidth := vvLargura;
+      fixRect.Left := Rect.Left + vvLeft;
+      fixRect.Right := Rect.Left + bmpWidth;
+      if Bitmap <> nil then
+        DBGrid1.Canvas.StretchDraw(fixRect, Bitmap);
+    finally
+      Bitmap.Free;
+    end;
+    fixRect := Rect;
+    fixRect.Left := fixRect.Left + bmpWidth;
+  end;
+
+  fixRect := Rect;
+  if UpperCase(Column.FieldName) = 'XML' then
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      ImageList1.GetBitmap(2, Bitmap);
+      bmpWidth := vvLargura;
+      fixRect.Left := Rect.Left + vvLeft;
+      fixRect.Right := Rect.Left + bmpWidth;
+      if Bitmap <> nil then
+        DBGrid1.Canvas.StretchDraw(fixRect, Bitmap);
+    finally
+      Bitmap.Free;
+    end;
+    fixRect := Rect;
+    fixRect.Left := fixRect.Left + bmpWidth;
+  end;
+
+  if (UpperCase(Column.FieldName) <> 'BOLETO') and
+    (UpperCase(Column.FieldName) <> 'PDF') and
+    (UpperCase(Column.FieldName) <> 'XML') then
+  begin
+    if Column.Field.DataType in [FtFloat, ftInteger] then
+      DBGrid1.Canvas.textOut(Rect.Right - DBGrid1.Canvas.TextExtent(xValue).cx -
+        3, Rect.top, xValue)
+    Else
+      DBGrid1.Canvas.TextRect(Rect, Rect.Left, Rect.top, xValue);
+  end;
+
+end;
+
 function THCIAwsSecManCli.MD5(const texto: string): string;
 var
   idmd5: TIdHashMessageDigest5;
@@ -1775,17 +2163,7 @@ THCIAwsSecManCli.URLServicoStatusServer :=
 THCIAwsSecManCli.URLServicoStartServer :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
 
-
-// THCIAwsSecManCli.URLServicoStatusServer :=
-// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/statusserver/token/';
-//
-// THCIAwsSecManCli.URLServicoStartServer :=
-// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/startserver/token/';
-//
-// THCIAwsSecManCli.URLServicoAWSSecManTeste :=
-// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/testconn/token/';
-//
-// THCIAwsSecManCli.URLServicoAWSSecMan :=
-// 'http://172.25.128.1:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/token/';
+THCIAwsSecManCli.URLServicoBuscaFaturas :=
+  'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
 
 end.

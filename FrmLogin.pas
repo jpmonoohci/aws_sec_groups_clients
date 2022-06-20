@@ -34,6 +34,10 @@ type
     class var TimeoutConexao: Integer;
     class var TimeoutLeitura: Integer;
     class var AppToken: String;
+    class var CNPJCliente: String;
+    class var NomeCliente: String;
+    class var NomesFiliais: TStringList;
+    class var CNPJsFiliais: TStringList;
 
   end;
 
@@ -105,11 +109,15 @@ var
   lURL: String;
   lResponse: TStringStream;
   Resposta: String;
-  JSonValue: TJSonValue;
+  JSonObj: TJSONObject;
+  GrupoCNPJObj: TJSONObject;
+  JSonValue: TJSONValue;
+  JSonArray: TJSONArray;
   RetornoChamada: String;
   MensagemErroChamada: String;
   SSLIO: TIdSSLIOHandlerSocketOpenSSL;
   Http: TIdHTTP;
+  i: Integer;
 
 begin
 
@@ -138,19 +146,42 @@ begin
 
       Resposta := UTF8Decode(lResponse.DataString);
 
-      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+      JSonObj := TJSONObject.ParseJSONValue(Resposta) as TJSONObject;
 
-      RetornoChamada := JSonValue.GetValue<string>('response');
-
-      MensagemErroChamada := JSonValue.GetValue<string>('message');
-      JSonValue.Free;
+      RetornoChamada := JSonObj.GetValue<string>('response');
+      MensagemErroChamada := JSonObj.GetValue<string>('message');
 
       if (not RetornoChamada.equals('true')) then
       begin
+        JSonObj.Free;
         Result := False;
         MessageDlg('Erro ' + MensagemErroChamada, mtError, [mbOk], 0);
         exit;
       end;
+
+      CNPJCliente := JSonObj.GetValue<string>('cnpj');
+      NomeCliente := JSonObj.GetValue<string>('nome');
+
+      CNPJsFiliais.Clear;
+      NomesFiliais.Clear;
+
+      JSonValue := JSonObj.Get('group_cnpj').JSonValue;
+      JSonArray := JSonValue as TJSONArray;
+
+      for i := 0 to JSonArray.Size - 1 do
+      begin
+
+        GrupoCNPJObj := (JSonArray.Get(i) as TJSONObject);
+
+        JSonValue := GrupoCNPJObj.Get(0).JSonValue;
+        NomesFiliais.Add(JSonValue.Value);
+
+        JSonValue := GrupoCNPJObj.Get(1).JSonValue;
+        CNPJsFiliais.Add(JSonValue.Value);
+
+      end;
+
+      JSonObj.Free;
 
       Result := true;
 
@@ -179,5 +210,8 @@ initialization
 
 TLogin.URLServicoLoginPortal :=
   'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/loginportal/token/';
+
+TLogin.NomesFiliais := TStringList.Create();
+TLogin.CNPJsFiliais := TStringList.Create();
 
 end.
