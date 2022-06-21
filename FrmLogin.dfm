@@ -55,7 +55,6 @@ object Login: TLogin
     Width = 169
     Height = 21
     TabOrder = 3
-    Text = 'atacadaodoskitssp@gmail.com'
   end
   object StaticText2: TStaticText
     Left = 24
@@ -98,7 +97,7 @@ object Login: TLogin
     ParentDoubleBuffered = False
     PasswordChar = '*'
     TabOrder = 7
-    Text = '123456'
+    Text = ''
   end
   object IdHTTP1: TIdHTTP
     AllowCookies = True
