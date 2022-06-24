@@ -217,6 +217,9 @@ initialization
 TLogin.URLServicoLoginPortal :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/loginportal/token/';
 
+// TLogin.URLServicoLoginPortal :=
+// 'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/loginportal/token/';
+
 TLogin.NomesFiliais := TStringList.Create();
 TLogin.CNPJsFiliais := TStringList.Create();
 

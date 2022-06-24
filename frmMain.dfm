@@ -11579,27 +11579,17 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     0000C00100008001000080000000000000000000000000000000800000008001
     000080010000C0030000E0070000F00F0000FC3F0000}
   OldCreateOrder = False
-  Position = poDesktopCenter
+  Position = poScreenCenter
   OnCreate = FormCreate
   PixelsPerInch = 96
   TextHeight = 13
-  object MaskEdit1: TMaskEdit
-    Left = 192
-    Top = 61
-    Width = 118
-    Height = 21
-    EditMask = '00\.000\.000\/0000\-00;0;_'
-    MaxLength = 18
-    TabOrder = 0
-    Text = ''
-  end
   object ButtonSalvar: TButton
     Left = 192
     Top = 96
     Width = 75
     Height = 25
     Caption = 'Salvar'
-    TabOrder = 1
+    TabOrder = 0
   end
   object ButtonTeste: TButton
     Left = 152
@@ -11607,7 +11597,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Width = 89
     Height = 25
     Caption = 'Testar Conex'#227'o'
-    TabOrder = 2
+    TabOrder = 1
   end
   object StatusBar1: TStatusBar
     AlignWithMargins = True
@@ -11632,7 +11622,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Width = 637
     Height = 286
     ActivePage = TabSheet4
-    TabOrder = 4
+    TabOrder = 3
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
@@ -23432,9 +23422,23 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet4: TTabSheet
       Caption = 'Financeiro'
       ImageIndex = 3
+      object Label5: TLabel
+        Left = 3
+        Top = 40
+        Width = 89
+        Height = 13
+        Caption = 'Escolha a empresa'
+      end
+      object Label6: TLabel
+        Left = 3
+        Top = 94
+        Width = 89
+        Height = 13
+        Caption = 'Faturas em aberto'
+      end
       object DBGrid1: TDBGrid
         Left = 3
-        Top = 55
+        Top = 113
         Width = 338
         Height = 137
         DataSource = FaturasDataSource
@@ -23449,13 +23453,22 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       end
       object ComboBoxCNPJ: TComboBox
         Left = 3
-        Top = 20
+        Top = 59
         Width = 145
         Height = 21
         AutoComplete = False
         Style = csDropDownList
         TabOrder = 1
         OnChange = ComboBoxCNPJChange
+      end
+      object ButtonLogoffFinanceiro: TButton
+        Left = 266
+        Top = 3
+        Width = 75
+        Height = 25
+        Caption = 'Logoff'
+        TabOrder = 2
+        OnClick = ButtonLogoffFinanceiroClick
       end
     end
   end
@@ -23588,7 +23601,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 192
     Top = 240
     Bitmap = {
-      494C010103000800180030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101030008001C0030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

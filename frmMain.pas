@@ -13,13 +13,12 @@ uses
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
   IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin, Data.DB,
   Vcl.Grids, Vcl.DBGrids, Datasnap.DBClient, Datasnap.Provider,
-  System.ImageList, Vcl.ImgList, FileCtrl;
+  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib;
 
 type
   THCIAwsSecManCli = class(TForm)
     IdHTTP1: TIdHTTP;
     Timer1: TTimer;
-    MaskEdit1: TMaskEdit;
     ButtonSalvar: TButton;
     ButtonTeste: TButton;
     StatusBar1: TStatusBar;
@@ -68,6 +67,9 @@ type
     ImageList1: TImageList;
     FaturasDataSetPDF: TStringField;
     ComboBoxCNPJ: TComboBox;
+    Label5: TLabel;
+    Label6: TLabel;
+    ButtonLogoffFinanceiro: TButton;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -114,6 +116,7 @@ type
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
     function DownloadFile(URL: String; ArquivoDestino: String): Boolean;
     procedure ComboBoxCNPJChange(Sender: TObject);
+    procedure ButtonLogoffFinanceiroClick(Sender: TObject);
 
   private
 
@@ -1060,6 +1063,12 @@ begin
   ShellExecute(0, 'open', PChar(URL), nil, nil, SW_SHOWNORMAL);
 end;
 
+procedure THCIAwsSecManCli.ButtonLogoffFinanceiroClick(Sender: TObject);
+begin
+  LoggedOnPortal := false;
+  PageControl1.ActivePageIndex := 0;
+end;
+
 procedure THCIAwsSecManCli.ButtonTokenSalvarClick(Sender: TObject);
 var
   Token: String;
@@ -1074,6 +1083,8 @@ begin
   end;
 
   GravaIni('Config', 'Token', Token.Trim);
+
+  AppToken := Token.Trim;
 
   MessageDlg('Token salvo com sucesso.', mtInformation, [mbOk], 0);
 
@@ -1993,7 +2004,8 @@ begin
   DownloadDir := '';
   ArquivoDestino := '';
 
-  if (Column.Index < 3) or (Column.Index > 5) then
+  if (Column.Index < 3) or (Column.Index > 5) or
+    (FaturasDataSetBoleto.AsString.IsEmpty) then
     Exit();
 
   InitialDir := GetEnvironmentVariable('USERPROFILE') + '\Downloads';
@@ -2183,7 +2195,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '8';
+THCIAwsSecManCli.AppVersion := '9';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 
