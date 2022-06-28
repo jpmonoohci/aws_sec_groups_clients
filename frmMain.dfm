@@ -11626,6 +11626,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Image1: TImage
         Left = 286
         Top = 3
@@ -23283,6 +23287,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet2: TTabSheet
       Caption = 'Usu'#225'rios'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object ListBoxUser: TListBox
         Left = 21
         Top = 18
@@ -23316,6 +23324,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object Label2: TLabel
         Left = 16
         Top = 150
@@ -23601,7 +23613,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 192
     Top = 240
     Bitmap = {
-      494C0101030008001C0030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800200030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

@@ -2235,4 +2235,5 @@ THCIAwsSecManCli.URLServicoStartServer :=
 THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
 
+
 end.
