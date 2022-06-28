@@ -13,7 +13,7 @@ uses
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
   IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin, Data.DB,
   Vcl.Grids, Vcl.DBGrids, Datasnap.DBClient, Datasnap.Provider,
-  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib;
+  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib, Vcl.Samples.Spin;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -70,6 +70,15 @@ type
     Label5: TLabel;
     Label6: TLabel;
     ButtonLogoffFinanceiro: TButton;
+    PageControl2: TPageControl;
+    TabFaturas: TTabSheet;
+    TabServicos: TTabSheet;
+    Label7: TLabel;
+    SpinEditQtd: TSpinEdit;
+    Label8: TLabel;
+    ButtonPix: TButton;
+    Label9: TLabel;
+    LabelValorPix: TLabel;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -2195,7 +2204,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '9';
+THCIAwsSecManCli.AppVersion := '8';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 

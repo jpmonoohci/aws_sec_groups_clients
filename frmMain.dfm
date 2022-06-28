@@ -11626,12 +11626,8 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Image1: TImage
-        Left = 286
+        Left = 307
         Top = 3
         Width = 36
         Height = 41
@@ -23287,10 +23283,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet2: TTabSheet
       Caption = 'Usu'#225'rios'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ListBoxUser: TListBox
         Left = 21
         Top = 18
@@ -23324,10 +23316,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object Label2: TLabel
         Left = 16
         Top = 150
@@ -23434,55 +23422,127 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet4: TTabSheet
       Caption = 'Financeiro'
       ImageIndex = 3
-      object Label5: TLabel
-        Left = 3
-        Top = 40
-        Width = 89
-        Height = 13
-        Caption = 'Escolha a empresa'
-      end
-      object Label6: TLabel
-        Left = 3
-        Top = 94
-        Width = 89
-        Height = 13
-        Caption = 'Faturas em aberto'
-      end
-      object DBGrid1: TDBGrid
-        Left = 3
-        Top = 113
-        Width = 338
-        Height = 137
-        DataSource = FaturasDataSource
+      object PageControl2: TPageControl
+        Left = -1
+        Top = 0
+        Width = 343
+        Height = 229
+        ActivePage = TabServicos
         TabOrder = 0
-        TitleFont.Charset = DEFAULT_CHARSET
-        TitleFont.Color = clWindowText
-        TitleFont.Height = -11
-        TitleFont.Name = 'Tahoma'
-        TitleFont.Style = []
-        OnCellClick = DBGrid1CellClick
-        OnDrawColumnCell = DBGrid1DrawColumnCell
-      end
-      object ComboBoxCNPJ: TComboBox
-        Left = 3
-        Top = 59
-        Width = 145
-        Height = 21
-        AutoComplete = False
-        Style = csDropDownList
-        TabOrder = 1
-        OnChange = ComboBoxCNPJChange
+        object TabFaturas: TTabSheet
+          Caption = 'Faturas'
+          ExplicitTop = 48
+          ExplicitWidth = 332
+          ExplicitHeight = 195
+          object Label5: TLabel
+            Left = 3
+            Top = 16
+            Width = 89
+            Height = 13
+            Caption = 'Escolha a empresa'
+          end
+          object Label6: TLabel
+            Left = 3
+            Top = 62
+            Width = 89
+            Height = 13
+            Caption = 'Faturas em aberto'
+          end
+          object ComboBoxCNPJ: TComboBox
+            Left = 3
+            Top = 35
+            Width = 145
+            Height = 21
+            AutoComplete = False
+            Style = csDropDownList
+            TabOrder = 0
+            OnChange = ComboBoxCNPJChange
+          end
+          object DBGrid1: TDBGrid
+            Left = 3
+            Top = 79
+            Width = 326
+            Height = 114
+            DataSource = FaturasDataSource
+            TabOrder = 1
+            TitleFont.Charset = DEFAULT_CHARSET
+            TitleFont.Color = clWindowText
+            TitleFont.Height = -11
+            TitleFont.Name = 'Tahoma'
+            TitleFont.Style = []
+            OnCellClick = DBGrid1CellClick
+            OnDrawColumnCell = DBGrid1DrawColumnCell
+          end
+        end
+        object TabServicos: TTabSheet
+          Caption = 'Servi'#231'os'
+          ImageIndex = 1
+          ExplicitWidth = 281
+          ExplicitHeight = 165
+          object Label7: TLabel
+            Left = 3
+            Top = 16
+            Width = 240
+            Height = 13
+            Caption = 'Voc'#234' pode adquirir licen'#231'as de usu'#225'rios adicionais:'
+          end
+          object Label8: TLabel
+            Left = 3
+            Top = 51
+            Width = 115
+            Height = 13
+            Caption = 'Quantidade de licen'#231'as:'
+          end
+          object Label9: TLabel
+            Left = 3
+            Top = 84
+            Width = 28
+            Height = 13
+            Caption = 'Valor:'
+          end
+          object LabelValorPix: TLabel
+            Left = 43
+            Top = 84
+            Width = 42
+            Height = 13
+            Caption = 'R$ 0,00'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -11
+            Font.Name = 'Tahoma'
+            Font.Style = [fsBold]
+            ParentFont = False
+          end
+        end
       end
       object ButtonLogoffFinanceiro: TButton
-        Left = 266
-        Top = 3
-        Width = 75
+        Left = 228
+        Top = 231
+        Width = 114
         Height = 25
-        Caption = 'Logoff'
-        TabOrder = 2
+        Caption = 'Fechar financeiro'
+        TabOrder = 1
         OnClick = ButtonLogoffFinanceiroClick
       end
     end
+  end
+  object SpinEditQtd: TSpinEdit
+    Left = 137
+    Top = 99
+    Width = 49
+    Height = 22
+    MaxValue = 99
+    MinValue = 0
+    TabOrder = 4
+    Value = 1
+  end
+  object ButtonPix: TButton
+    Left = 8
+    Top = 160
+    Width = 99
+    Height = 25
+    Caption = 'Pagar via PIX'
+    TabOrder = 5
   end
   object IdHTTP1: TIdHTTP
     AllowCookies = True
@@ -23570,7 +23630,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     IndexDefs = <>
     Params = <>
     StoreDefs = True
-    Left = 296
+    Left = 72
     Top = 240
     object FaturasDataSetData: TStringField
       DisplayWidth = 10
@@ -23603,17 +23663,17 @@ object HCIAwsSecManCli: THCIAwsSecManCli
   object FaturasDataSource: TDataSource
     AutoEdit = False
     DataSet = FaturasDataSet
-    Left = 240
+    Left = 40
     Top = 240
   end
   object ImageList1: TImageList
     ColorDepth = cd32Bit
     Height = 48
     Width = 48
-    Left = 192
+    Left = 8
     Top = 240
     Bitmap = {
-      494C010103000800200030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800240030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
