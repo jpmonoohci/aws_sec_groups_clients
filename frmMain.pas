@@ -717,7 +717,7 @@ begin
       StatusBar1.Panels[0].Text := 'Aguardando servidor ficar online';
       Application.ProcessMessages;
 
-      lURL := 'http://' + ServerIP + ':9998/PingServer';
+      lURL := 'http://' + ServerIP + ':9998/PingServer?token=' + AppToken;
 
       Http := TIdHTTP.Create(nil);
 

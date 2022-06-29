@@ -11621,7 +11621,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet4
+    ActivePage = TabSheet1
     TabOrder = 3
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
@@ -23431,9 +23431,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         TabOrder = 0
         object TabFaturas: TTabSheet
           Caption = 'Faturas'
-          ExplicitTop = 48
-          ExplicitWidth = 332
-          ExplicitHeight = 195
           object Label5: TLabel
             Left = 3
             Top = 16
@@ -23477,8 +23474,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         object TabServicos: TTabSheet
           Caption = 'Servi'#231'os'
           ImageIndex = 1
-          ExplicitWidth = 281
-          ExplicitHeight = 165
           object Label7: TLabel
             Left = 3
             Top = 16
@@ -23673,7 +23668,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 8
     Top = 240
     Bitmap = {
-      494C010103000800240030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800280030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
