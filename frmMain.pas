@@ -705,10 +705,10 @@ begin
   try
     try
 
-      StatusBar1.Panels[0].Text := 'Aguardando servidor ficar online';
+      StatusBar1.Panels[0].Text := 'Aguardando conexão com o servidor';
       Application.ProcessMessages;
 
-      lURL := 'http://' + ServerIP + ':9998/PingServer';
+      lURL := 'http://' + ServerIP + ':9998/PingServer?token=' + AppToken;;
 
       Http := TIdHTTP.Create(nil);
 
@@ -727,7 +727,7 @@ begin
 
       Http.Get(lURL, lResponse);
 
-      StatusBar1.Panels[0].Text := 'Servidor está online';
+      StatusBar1.Panels[0].Text := 'Servidor está conectado';
       Application.ProcessMessages;
 
       Result := true;
@@ -953,7 +953,7 @@ begin
   Screen.Cursor := crHourglass;
 
   ContaPing := 1;
-  while (ContaPing < 20) do
+  while (ContaPing < 30) do
   begin
 
     Application.ProcessMessages;
@@ -1021,6 +1021,7 @@ var
   Token: string;
   hashClient: string;
   Password: string;
+   ContaPing: Integer;
 begin
 
   Server := ServerIP;
@@ -1056,6 +1057,37 @@ begin
   else
   begin
     MessageDlg('Por favor, configure o Token.', mtError, [mbOk], 0);
+    Exit();
+  end;
+
+  Screen.Cursor := crHourglass;
+
+  ContaPing := 1;
+  while (ContaPing < 30) do
+  begin
+
+    Application.ProcessMessages;
+
+    if PingServer() then
+      break;
+
+    Application.ProcessMessages;
+
+    sleep(10);
+
+    ContaPing := ContaPing + 1;
+
+  end;
+
+  Screen.Cursor := crDefault;
+
+  Application.ProcessMessages;
+
+  if (ContaPing >= 20) then
+  begin
+    ButtonExecutarHCI.Enabled := true;
+    MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
+      mtError, [mbOk], 0);
     Exit();
   end;
 
@@ -1233,7 +1265,7 @@ begin
     try
 
       StatusBar1.Panels[0].Text := 'Baixando atualização. v(' +
-        AppVersion + ')';
+        RemoteVersion + ')';
 
       Application.ProcessMessages;
 
@@ -2195,7 +2227,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '9';
+THCIAwsSecManCli.AppVersion := '8';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 
