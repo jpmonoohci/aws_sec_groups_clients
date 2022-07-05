@@ -11621,7 +11621,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Top = 0
     Width = 637
     Height = 286
-    ActivePage = TabSheet1
+    ActivePage = TabSheet4
     TabOrder = 3
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
@@ -23484,20 +23484,20 @@ object HCIAwsSecManCli: THCIAwsSecManCli
           object Label8: TLabel
             Left = 3
             Top = 51
-            Width = 115
-            Height = 13
-            Caption = 'Quantidade de licen'#231'as:'
+            Width = 56
+            Height = 26
+            Caption = 'Quantidade'#13#10'de licen'#231'as:'
           end
           object Label9: TLabel
             Left = 3
-            Top = 84
+            Top = 91
             Width = 28
             Height = 13
             Caption = 'Valor:'
           end
           object LabelValorPix: TLabel
-            Left = 43
-            Top = 84
+            Left = 65
+            Top = 91
             Width = 42
             Height = 13
             Caption = 'R$ 0,00'
@@ -23507,6 +23507,27 @@ object HCIAwsSecManCli: THCIAwsSecManCli
             Font.Name = 'Tahoma'
             Font.Style = [fsBold]
             ParentFont = False
+          end
+          object ButtonPix: TButton
+            Left = 145
+            Top = 79
+            Width = 99
+            Height = 25
+            Caption = 'Pagar via PIX'
+            Enabled = False
+            TabOrder = 0
+            OnClick = ButtonPixClick
+          end
+          object SpinEditQtd: TSpinEdit
+            Left = 65
+            Top = 51
+            Width = 49
+            Height = 22
+            MaxValue = 99
+            MinValue = 0
+            TabOrder = 1
+            Value = 0
+            OnChange = SpinEditQtdChange
           end
         end
       end
@@ -23520,24 +23541,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         OnClick = ButtonLogoffFinanceiroClick
       end
     end
-  end
-  object SpinEditQtd: TSpinEdit
-    Left = 137
-    Top = 99
-    Width = 49
-    Height = 22
-    MaxValue = 99
-    MinValue = 0
-    TabOrder = 4
-    Value = 1
-  end
-  object ButtonPix: TButton
-    Left = 8
-    Top = 160
-    Width = 99
-    Height = 25
-    Caption = 'Pagar via PIX'
-    TabOrder = 5
   end
   object IdHTTP1: TIdHTTP
     AllowCookies = True
@@ -23668,7 +23671,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 8
     Top = 240
     Bitmap = {
-      494C010103000800280030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C0101030008003C0030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

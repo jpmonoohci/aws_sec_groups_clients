@@ -126,6 +126,13 @@ type
     function DownloadFile(URL: String; ArquivoDestino: String): Boolean;
     procedure ComboBoxCNPJChange(Sender: TObject);
     procedure ButtonLogoffFinanceiroClick(Sender: TObject);
+    procedure SpinEditQtdChange(Sender: TObject);
+    function GetLicensesCosts(Token: String; Amount: Integer): String;
+    procedure ButtonPixClick(Sender: TObject);
+    function GetPix(Token: String): String;
+    function CreatePix(Token: String; LicenseCost: Double;
+      CustomerDocument: String; CustomerName: String;
+      PixDescription: String): String;
 
   private
 
@@ -158,6 +165,10 @@ type
     class var NomeCliente: String;
     class var CNPJsFiliais: TStringList;
     class var NomesFiliais: TStringList;
+    class var URLServicoPixLicenseCost: String;
+    class var CustoLicencasPix: Double;
+    class var URLServicoPixCreate: String;
+    class var URLServicoPixGet: String;
 
   end;
 
@@ -1078,6 +1089,23 @@ begin
   PageControl1.ActivePageIndex := 0;
 end;
 
+procedure THCIAwsSecManCli.ButtonPixClick(Sender: TObject);
+begin
+
+  if ((CustoLicencasPix = 0) or
+    (Application.MessageBox
+    (PChar('Deseja realmente efetuar a aquisição de novos usuários?'),
+    'Atenção!', mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    Exit();
+
+  CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
+    'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
+
+  // CreatePix(AppToken, CustoLicencasPix, CNPJCliente, NomeCliente,
+  // 'Aquisição de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
+
+end;
+
 procedure THCIAwsSecManCli.ButtonTokenSalvarClick(Sender: TObject);
 var
   Token: String;
@@ -1670,6 +1698,42 @@ begin
 
 end;
 
+procedure THCIAwsSecManCli.SpinEditQtdChange(Sender: TObject);
+var
+  Custo: String;
+begin
+
+  if (SpinEditQtd.Value = 0) then
+  begin
+    LabelValorPix.Caption := 'R$ ' + '0,00';
+    ButtonPix.Enabled := false;
+    Exit;
+  end;
+
+  Screen.Cursor := crHourglass;
+  ButtonPix.Enabled := false;
+
+  StatusBar1.Panels[0].Text := 'Aguarde, calculando custo de licenças';
+  Application.ProcessMessages;
+
+  Custo := GetLicensesCosts(AppToken, SpinEditQtd.Value);
+
+  StatusBar1.Panels[0].Text := '';
+
+  Screen.Cursor := crDefault;
+
+  if (not Custo.IsEmpty) then
+  begin
+
+    CustoLicencasPix := StrToFloat(Custo);
+
+    ButtonPix.Enabled := true;
+
+    LabelValorPix.Caption := FormatFloat('R$ #,##0.00', CustoLicencasPix);
+  end;
+
+end;
+
 function THCIAwsSecManCli.StartServer(Token: String): String;
 var
   lURL: String;
@@ -1710,6 +1774,240 @@ begin
       Timer1.Enabled := true;
 
       StatusBar1.Panels[0].Text := 'Aguarde, ligando Servidor.';
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.GetLicensesCosts(Token: String;
+  Amount: Integer): String;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+  Custo: String;
+  Response: String;
+begin
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoPixLicenseCost + '/' + Token + '/amount/' +
+        Amount.ToString;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+      Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
+
+      if (Response.equals('true')) then
+        Custo := (JSonValue as TJSonObject).Get('value').JSonValue.Value
+      else
+        Custo := '0,00';
+
+      Result := Custo;
+
+      JSonValue.Free;
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.CreatePix(Token: String; LicenseCost: Double;
+  CustomerDocument: String; CustomerName: String;
+  PixDescription: String): String;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+  Response: String;
+  JsonToSend: TStringStream;
+  jsonPair: TJSONPair;
+  JSonObject: TJSonObject;
+begin
+
+  lResponse := TStringStream.Create('');
+
+  JSonObject := TJSonObject.Create();
+
+  JSonObject.AddPair(TJSONPair.Create('pix_nome', CustomerName));
+  JSonObject.AddPair(TJSONPair.Create('pix_documento', CustomerDocument));
+  JSonObject.AddPair(TJSONPair.Create('pix_descricao', PixDescription));
+  JSonObject.AddPair(TJSONPair.Create('pix_valor',
+    StringReplace(LicenseCost.ToString, ',', '.', [rfReplaceAll,
+    rfIgnoreCase])));
+
+  try
+    try
+      lURL := URLServicoPixCreate + '/' + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.Request.ContentType := 'application/json';
+      Http.Request.CharSet := 'utf-8';
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Resposta := JSonObject.ToString;
+
+      JsonToSend := TStringStream.Create(JSonObject.ToString);
+
+      try
+        Http.Post(lURL, JsonToSend, lResponse);
+      except
+        on E: EIdHTTPProtocolException do
+          ShowMessage(E.ErrorMessage);
+      end;
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+      Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
+
+      if (Response.equals('true')) then
+
+      else
+
+        Result := '';
+
+      JSonValue.Free;
+
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.GetPix(Token: String): String;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+  Custo: String;
+  Response: String;
+begin
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoPixGet + '/' + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+      Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
+
+      if (Response.equals('true')) then
+        Custo := (JSonValue as TJSonObject).Get('value').JSonValue.Value
+      else
+        Custo := '0,00';
+
+      Result := Custo;
+
+      JSonValue.Free;
 
       Application.ProcessMessages;
 
@@ -1930,8 +2228,8 @@ begin
   Result := Result + StringOfChar('0', 6 - Length(us)) + us;
 end;
 
-function THCIAwsSecManCli.DownloadFile(URL: String;
-  ArquivoDestino: String): Boolean;
+function THCIAwsSecManCli.DownloadFile(URL: String; ArquivoDestino: String)
+  : Boolean;
 var
   fileDownload: TFileStream;
   lURL: String;
@@ -2204,7 +2502,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '8';
+THCIAwsSecManCli.AppVersion := '9';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 
@@ -2244,5 +2542,24 @@ THCIAwsSecManCli.URLServicoStartServer :=
 THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
 
+THCIAwsSecManCli.URLServicoPixLicenseCost :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
+
+THCIAwsSecManCli.URLServicoPixCreate :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+THCIAwsSecManCli.URLServicoPixGet :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+// THCIAwsSecManCli.URLServicoPixGet :=
+// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+
+// THCIAwsSecManCli.URLServicoPixCreate :=
+// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+
+// THCIAwsSecManCli.URLServicoPixLicenseCost :=
+// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
 
 end.
