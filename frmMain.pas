@@ -168,6 +168,7 @@ var
   IgnorarAtualizacao: string;
   TemDireitosAdmin: string;
   DebugString: string;
+  DesabilitaListaUsuarios: string;
 
 begin
 
@@ -246,7 +247,12 @@ begin
     PageControl1.ActivePageIndex := 2;
   end;
 
-  PageControl1.Pages[1].TabVisible := true;
+  DesabilitaListaUsuarios := LeIni('Config', 'DisableUsersList');
+
+  if (DesabilitaListaUsuarios.equals('True')) then
+    PageControl1.Pages[1].TabVisible := false
+  else
+    PageControl1.Pages[1].TabVisible := true;
 
 end;
 
@@ -886,7 +892,7 @@ begin
 
     MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
       mtError, [mbOk], 0);
-    ButtonListUsers.Enabled := false;
+    ButtonListUsers.Enabled := true;
     Exit();
   end;
 
@@ -1021,7 +1027,7 @@ var
   Token: string;
   hashClient: string;
   Password: string;
-   ContaPing: Integer;
+  ContaPing: Integer;
 begin
 
   Server := ServerIP;
@@ -2227,7 +2233,7 @@ end;
 
 initialization
 
-THCIAwsSecManCli.AppVersion := '8';
+THCIAwsSecManCli.AppVersion := '9';
 
 THCIAwsSecManCli.IgnoreUpdates := false;
 
@@ -2266,6 +2272,5 @@ THCIAwsSecManCli.URLServicoStartServer :=
 
 THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
-
 
 end.
