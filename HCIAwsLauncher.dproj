@@ -154,6 +154,10 @@ $(PostBuildEvent)]]></PostBuildEvent>
             <Form>HCIAwsSecManCli</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="FrmLogin.pas">
+            <Form>Login</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>
