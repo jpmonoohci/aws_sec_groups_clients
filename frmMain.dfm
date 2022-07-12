@@ -23254,7 +23254,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       end
       object ButtonAtualizarStatusServer: TButton
         Left = 151
-        Top = 45
+        Top = 41
         Width = 121
         Height = 25
         Caption = 'Atualizar Status'
@@ -23474,60 +23474,83 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         object TabServicos: TTabSheet
           Caption = 'Servi'#231'os'
           ImageIndex = 1
-          object Label7: TLabel
+          ExplicitTop = 103
+          ExplicitWidth = 301
+          ExplicitHeight = 122
+          object PnlLicence: TPanel
             Left = 3
-            Top = 16
-            Width = 240
-            Height = 13
-            Caption = 'Voc'#234' pode adquirir licen'#231'as de usu'#225'rios adicionais:'
-          end
-          object Label8: TLabel
-            Left = 3
-            Top = 51
-            Width = 56
-            Height = 26
-            Caption = 'Quantidade'#13#10'de licen'#231'as:'
-          end
-          object Label9: TLabel
-            Left = 3
-            Top = 91
-            Width = 28
-            Height = 13
-            Caption = 'Valor:'
-          end
-          object LabelValorPix: TLabel
-            Left = 65
-            Top = 91
-            Width = 42
-            Height = 13
-            Caption = 'R$ 0,00'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Tahoma'
-            Font.Style = [fsBold]
-            ParentFont = False
-          end
-          object ButtonPix: TButton
-            Left = 145
-            Top = 79
-            Width = 99
-            Height = 25
-            Caption = 'Pagar via PIX'
-            Enabled = False
+            Top = 3
+            Width = 329
+            Height = 110
             TabOrder = 0
-            OnClick = ButtonPixClick
+            object Label7: TLabel
+              Left = 42
+              Top = 3
+              Width = 240
+              Height = 29
+              Caption = 'Voc'#234' pode adquirir licen'#231'as de usu'#225'rios adicionais:'
+            end
+            object Label9: TLabel
+              Left = 190
+              Top = 38
+              Width = 28
+              Height = 13
+              Caption = 'Valor:'
+            end
+            object Label8: TLabel
+              Left = 42
+              Top = 29
+              Width = 56
+              Height = 26
+              Caption = 'Quantidade'#13#10'de licen'#231'as:'
+            end
+            object LabelValorPix: TLabel
+              Left = 224
+              Top = 38
+              Width = 42
+              Height = 13
+              Caption = 'R$ 0,00'
+              Font.Charset = DEFAULT_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Tahoma'
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object ButtonPix: TButton
+              Left = 104
+              Top = 63
+              Width = 99
+              Height = 25
+              Caption = 'Pagar via PIX'
+              Enabled = False
+              TabOrder = 0
+              OnClick = ButtonPixClick
+            end
+            object SpinEditQtd: TSpinEdit
+              Left = 104
+              Top = 35
+              Width = 49
+              Height = 22
+              MaxValue = 99
+              MinValue = 0
+              TabOrder = 1
+              Value = 0
+              OnChange = SpinEditQtdChange
+            end
           end
-          object SpinEditQtd: TSpinEdit
-            Left = 65
-            Top = 51
-            Width = 49
-            Height = 22
-            MaxValue = 99
-            MinValue = 0
+          object PnlPix: TPanel
+            Left = 3
+            Top = 97
+            Width = 329
+            Height = 125
             TabOrder = 1
-            Value = 0
-            OnChange = SpinEditQtdChange
+            object ImageQRCode: TImage
+              Left = 209
+              Top = 13
+              Width = 105
+              Height = 105
+            end
           end
         end
       end
@@ -23671,7 +23694,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 8
     Top = 240
     Bitmap = {
-      494C0101030008003C0030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800440030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000

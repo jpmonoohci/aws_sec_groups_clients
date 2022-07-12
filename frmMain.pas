@@ -79,6 +79,9 @@ type
     ButtonPix: TButton;
     Label9: TLabel;
     LabelValorPix: TLabel;
+    ImageQRCode: TImage;
+    PnlLicence: TPanel;
+    PnlPix: TPanel;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -132,7 +135,7 @@ type
     function GetPix(Token: String): String;
     function CreatePix(Token: String; LicenseCost: Double;
       CustomerDocument: String; CustomerName: String;
-      PixDescription: String): String;
+      PixDescription: String): Boolean;
 
   private
 
@@ -904,9 +907,11 @@ begin
   if (ContaPing >= 20) then
   begin
 
+    StatusBar1.Panels[0].Text := 'Erro conectando ao servidor';
+    Application.ProcessMessages;
     MessageDlg('Erro conectando ao servidor, por favor tente novamente.',
       mtError, [mbOk], 0);
-    ButtonListUsers.Enabled := false;
+    ButtonListUsers.Enabled := true;
     Exit();
   end;
 
@@ -1093,13 +1098,17 @@ procedure THCIAwsSecManCli.ButtonPixClick(Sender: TObject);
 begin
 
   if ((CustoLicencasPix = 0) or
-    (Application.MessageBox
-    (PChar('Deseja realmente efetuar a aquisição de novos usuários?'),
-    'Atenção!', mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
+    SpinEditQtd.Value.ToString + ' novo(s) usuário(s)?'), 'Atenção!',
+    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
     Exit();
 
-  CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
-    'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
+  if (CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
+    'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI')) then
+    begin
+
+    end;
+
 
   // CreatePix(AppToken, CustoLicencasPix, CNPJCliente, NomeCliente,
   // 'Aquisição de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
@@ -1608,6 +1617,7 @@ begin
       SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
       SSLIO.SSLOptions.Method := sslvTLSv1;
       SSLIO.SSLOptions.Mode := sslmClient;
+      SSLIO.SSLOptions.SSLVersions := [sslvTLSv1_2];
       Http.IOHandler := SSLIO;
 
       Http.Get(lURL, lResponse);
@@ -1853,7 +1863,9 @@ begin
       on E: Exception do
       begin
 
-        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+        StatusBar1.Panels[0].Text := 'Erro calculando custo de licença ' +
+          E.Message;
+        Result := '0,00';
 
       end;
 
@@ -1872,7 +1884,7 @@ end;
 
 function THCIAwsSecManCli.CreatePix(Token: String; LicenseCost: Double;
   CustomerDocument: String; CustomerName: String;
-  PixDescription: String): String;
+  PixDescription: String): Boolean;
 var
   lURL: String;
   lResponse: TStringStream;
@@ -1920,12 +1932,7 @@ begin
 
       JsonToSend := TStringStream.Create(JSonObject.ToString);
 
-      try
-        Http.Post(lURL, JsonToSend, lResponse);
-      except
-        on E: EIdHTTPProtocolException do
-          ShowMessage(E.ErrorMessage);
-      end;
+      Http.Post(lURL, JsonToSend, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -1933,10 +1940,9 @@ begin
       Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
 
       if (Response.equals('true')) then
-
+        Result := true
       else
-
-        Result := '';
+        Result := false;
 
       JSonValue.Free;
 
@@ -1947,7 +1953,8 @@ begin
       on E: Exception do
       begin
 
-        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+        StatusBar1.Panels[0].Text := 'Erro gerando pix ' + E.Message;
+        Result := false;
 
       end;
 
@@ -2228,8 +2235,8 @@ begin
   Result := Result + StringOfChar('0', 6 - Length(us)) + us;
 end;
 
-function THCIAwsSecManCli.DownloadFile(URL: String; ArquivoDestino: String)
-  : Boolean;
+function THCIAwsSecManCli.DownloadFile(URL: String;
+  ArquivoDestino: String): Boolean;
 var
   fileDownload: TFileStream;
   lURL: String;
@@ -2543,13 +2550,13 @@ THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
 
 THCIAwsSecManCli.URLServicoPixLicenseCost :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
 
 THCIAwsSecManCli.URLServicoPixCreate :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
 THCIAwsSecManCli.URLServicoPixGet :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
 // THCIAwsSecManCli.URLServicoPixGet :=
 // 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
