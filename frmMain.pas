@@ -13,7 +13,9 @@ uses
   ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
   IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin, Data.DB,
   Vcl.Grids, Vcl.DBGrids, Datasnap.DBClient, Datasnap.Provider,
-  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib, Vcl.Samples.Spin;
+  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib, Vcl.Samples.Spin,
+  System.NetEncoding, IdCoder, IdCoder3to4, IdCoderMIME, IdGlobal,
+  Vcl.Image.Base64;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -82,6 +84,15 @@ type
     ImageQRCode: TImage;
     PnlLicence: TPanel;
     PnlPix: TPanel;
+    Label10: TLabel;
+    LabelValorPixPagar: TLabel;
+    Label11: TLabel;
+    Label12: TLabel;
+    Label13: TLabel;
+    EditPixCopiaCola: TEdit;
+    ButtonCancelPix: TButton;
+    ButtonPixCopiaCola: TButton;
+    IdDecoderMIME1: TIdDecoderMIME;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -132,10 +143,18 @@ type
     procedure SpinEditQtdChange(Sender: TObject);
     function GetLicensesCosts(Token: String; Amount: Integer): String;
     procedure ButtonPixClick(Sender: TObject);
-    function GetPix(Token: String): String;
+    function GetPix(Token: String): Boolean;
     function CreatePix(Token: String; LicenseCost: Double;
       CustomerDocument: String; CustomerName: String;
       PixDescription: String): Boolean;
+    procedure VerificaPixAPagar();
+    procedure PageControl2Change(Sender: TObject);
+    procedure ButtonPixCopiaColaClick(Sender: TObject);
+    procedure LoadQRCode(Base64Str: String);
+    function Base64ToStream(const ABase64Stream: TMemoryStream;
+      var AStream: TMemoryStream): Boolean;
+    function CancelPix(Token: String): Boolean;
+    procedure ButtonCancelPixClick(Sender: TObject);
 
   private
 
@@ -172,6 +191,7 @@ type
     class var CustoLicencasPix: Double;
     class var URLServicoPixCreate: String;
     class var URLServicoPixGet: String;
+    class var URLServicoPixCancel: String;
 
   end;
 
@@ -559,6 +579,8 @@ begin
         ComboBoxCNPJ.ItemIndex := 0;
         CarregaFaturas(CNPJCliente);
 
+        PageControl2.ActivePageIndex := 0;
+
       end
       else
         PageControl1.ActivePageIndex := 0;
@@ -568,6 +590,35 @@ begin
     end;
 
   end;
+
+end;
+
+procedure THCIAwsSecManCli.PageControl2Change(Sender: TObject);
+begin
+  if ((PageControl2.ActivePageIndex = 1)) then
+    VerificaPixAPagar();
+
+end;
+
+procedure THCIAwsSecManCli.VerificaPixAPagar();
+begin
+
+  Screen.Cursor := crHourglass;
+  Application.ProcessMessages;
+
+  if (GetPix(AppToken)) then
+  begin
+    PnlLicence.Visible := false;
+    PnlPix.Visible := true;
+  end
+  else
+  begin
+    PnlLicence.Visible := true;
+    PnlPix.Visible := false;
+  end;
+
+  Screen.Cursor := crDefault;
+  Application.ProcessMessages;
 
 end;
 
@@ -584,8 +635,6 @@ var
   I: Integer;
   FaturaObj: TJSonObject;
   JSonValue: TJSonValue;
-
-  Teste: String;
 
 begin
 
@@ -824,6 +873,25 @@ begin
     ButtonAtualizarStatusServer.Enabled := true;
 
   end
+
+end;
+
+procedure THCIAwsSecManCli.ButtonCancelPixClick(Sender: TObject);
+begin
+
+  if (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
+    SpinEditQtd.Value.ToString + ' novo(s) usuário(s)?'), 'Atenção!',
+    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idYes) then
+
+  begin
+
+    if (CancelPix(AppToken)) then
+    begin
+      MessageDlg('PIX cancelado com sucesso.', mtInformation, [mbOk], 0);
+      VerificaPixAPagar();
+    end;
+
+  end;
 
 end;
 
@@ -1097,22 +1165,42 @@ end;
 procedure THCIAwsSecManCli.ButtonPixClick(Sender: TObject);
 begin
 
+  ButtonPix.Enabled := false;
+
   if ((CustoLicencasPix = 0) or
     (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
     SpinEditQtd.Value.ToString + ' novo(s) usuário(s)?'), 'Atenção!',
     mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+  begin
+    ButtonPix.Enabled := true;
     Exit();
-
-  if (CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
-    'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI')) then
-    begin
-
-    end;
+  end;
 
 
   // CreatePix(AppToken, CustoLicencasPix, CNPJCliente, NomeCliente,
   // 'Aquisição de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
 
+  if (CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
+    'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI')) then
+  begin
+
+    StatusBar1.Panels[0].Text := 'PIX gerado com sucesso';
+    Application.ProcessMessages;
+
+    VerificaPixAPagar();
+
+  end;
+
+  ButtonPix.Enabled := true;
+
+end;
+
+procedure THCIAwsSecManCli.ButtonPixCopiaColaClick(Sender: TObject);
+begin
+  Clipboard.AsText := EditPixCopiaCola.Text;
+
+  StatusBar1.Panels[0].Text := 'Pix Copia e Cola Copiado para a memória';
+  Application.ProcessMessages;
 end;
 
 procedure THCIAwsSecManCli.ButtonTokenSalvarClick(Sender: TObject);
@@ -1898,6 +1986,10 @@ var
   JSonObject: TJSonObject;
 begin
 
+  Screen.Cursor := crHourglass;
+  StatusBar1.Panels[0].Text := 'Aguarde gerando pix';
+  Application.ProcessMessages;
+
   lResponse := TStringStream.Create('');
 
   JSonObject := TJSonObject.Create();
@@ -1928,11 +2020,115 @@ begin
       SSLIO.SSLOptions.Mode := sslmClient;
       Http.IOHandler := SSLIO;
 
-      Resposta := JSonObject.ToString;
-
       JsonToSend := TStringStream.Create(JSonObject.ToString);
 
       Http.Post(lURL, JsonToSend, lResponse);
+
+      Resposta := lResponse.DataString;
+
+      JSonValue := TJSonObject.ParseJSONValue(Resposta);
+      Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
+
+      if (Response.equals('true')) then
+        Result := true
+      else
+      begin
+        Result := false;
+        StatusBar1.Panels[0].Text := 'Erro gerando pix';
+      end;
+
+      JSonValue.Free;
+
+      Screen.Cursor := crDefault;
+      Application.ProcessMessages;
+
+    except
+
+      on E: Exception do
+      begin
+
+        StatusBar1.Panels[0].Text := 'Erro gerando pix ' + E.Message;
+        Result := false;
+        Screen.Cursor := crDefault;
+
+      end;
+
+    end;
+
+  finally
+    lResponse.Free();
+
+    Http.Disconnect;
+    FreeAndNil(SSLIO);
+    FreeAndNil(Http);
+
+  end;
+
+end;
+
+function THCIAwsSecManCli.Base64ToStream(const ABase64Stream: TMemoryStream;
+  var AStream: TMemoryStream): Boolean;
+var
+  Str: String;
+  bytes: TArray<System.Byte>;
+  Base64Encoding: TBase64Encoding;
+begin
+  Result := false;
+  try
+
+    Base64Encoding := TBase64Encoding.Create();
+    Base64Encoding.Decode(ABase64Stream, AStream);
+    Base64Encoding.Free;
+    Result := true;
+  except
+    on E: Exception do
+      ShowMessage(E.Message);
+  end;
+end;
+
+procedure THCIAwsSecManCli.LoadQRCode(Base64Str: String);
+
+begin
+
+  Base64Str := Base64Str.Replace('data:image/png;base64,', '');
+
+  ImageQRCode.Base64(Base64Str);
+
+end;
+
+function THCIAwsSecManCli.CancelPix(Token: String): Boolean;
+var
+  lURL: String;
+  lResponse: TStringStream;
+  Resposta: String;
+  JSonValue: TJSonValue;
+  JSonPixArray: TJSONArray;
+  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
+  Http: TIdHTTP;
+  Response: String;
+begin
+
+  StatusBar1.Panels[0].Text := 'Aguarde, cancelando PIX';
+  Application.ProcessMessages;
+
+  lResponse := TStringStream.Create('');
+  try
+    try
+      lURL := URLServicoPixCancel + '/' + Token;
+
+      Http := TIdHTTP.Create(nil);
+
+      Http.ConnectTimeout := TimeoutConexao;
+      Http.ReadTimeout := TimeoutLeitura;
+
+      Http.ProtocolVersion := pv1_1;
+      Http.HandleRedirects := true;
+      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
+      SSLIO.SSLOptions.Method := sslvTLSv1;
+      SSLIO.SSLOptions.Mode := sslmClient;
+      Http.IOHandler := SSLIO;
+
+      Http.Get(lURL, lResponse);
 
       Resposta := lResponse.DataString;
 
@@ -1953,7 +2149,7 @@ begin
       on E: Exception do
       begin
 
-        StatusBar1.Panels[0].Text := 'Erro gerando pix ' + E.Message;
+        StatusBar1.Panels[0].Text := 'Erro cancelando PIX ' + E.Message;
         Result := false;
 
       end;
@@ -1971,17 +2167,25 @@ begin
 
 end;
 
-function THCIAwsSecManCli.GetPix(Token: String): String;
+function THCIAwsSecManCli.GetPix(Token: String): Boolean;
 var
   lURL: String;
   lResponse: TStringStream;
   Resposta: String;
   JSonValue: TJSonValue;
+  JSonPixArray: TJSONArray;
   SSLIO: TIdSSLIOHandlerSocketOpenSSL;
   Http: TIdHTTP;
   Custo: String;
   Response: String;
+  PixValor: String;
+  PixCopiaCola: String;
+  PixQRCode: String;
+  PixDescricao: String;
 begin
+
+  StatusBar1.Panels[0].Text := 'Aguarde, buscando informações';
+  Application.ProcessMessages;
 
   lResponse := TStringStream.Create('');
   try
@@ -2008,11 +2212,41 @@ begin
       Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
 
       if (Response.equals('true')) then
-        Custo := (JSonValue as TJSonObject).Get('value').JSonValue.Value
-      else
-        Custo := '0,00';
+      begin
 
-      Result := Custo;
+        JSonValue := (JSonValue as TJSonObject).Get('pix').JSonValue;
+        JSonPixArray := JSonValue as TJSONArray;
+
+        if (JSonPixArray.Size > 0) then
+        begin
+          PixValor := (JSonPixArray.Get(0) as TJSonObject).Get('pix_valor')
+            .JSonValue.Value;
+
+          LabelValorPixPagar.Caption := 'R$ ' + PixValor;
+
+          PixQRCode := (JSonPixArray.Get(0) as TJSonObject).Get('pix_qrcodeb64')
+            .JSonValue.Value;
+
+          LoadQRCode(PixQRCode);
+
+          PixCopiaCola := (JSonPixArray.Get(0) as TJSonObject)
+            .Get('pix_txt_qrcode').JSonValue.Value;
+
+          EditPixCopiaCola.Text := PixCopiaCola;
+
+          PixDescricao := (JSonPixArray.Get(0) as TJSonObject)
+            .Get('pix_descricao').JSonValue.Value;
+
+          StatusBar1.Panels[0].Text := 'PIX aguardando pagamento';
+          Application.ProcessMessages;
+
+        end;
+
+        Result := true;
+
+      end
+      else
+        Result := false;
 
       JSonValue.Free;
 
@@ -2189,7 +2423,7 @@ begin
     if ((r = 0) or (r = 1)) then
       dig13 := '0'
     else
-      str((11 - r): 1, dig13);
+      Str((11 - r): 1, dig13);
     // converte um número no respectivo caractere numérico
 
     { *-- Cálculo do 2o. Digito Verificador --* }
@@ -2206,7 +2440,7 @@ begin
     if ((r = 0) or (r = 1)) then
       dig14 := '0'
     else
-      str((11 - r): 1, dig14);
+      Str((11 - r): 1, dig14);
 
     { Verifica se os digitos calculados conferem com os digitos informados. }
     if ((dig13 = CNPJ[13]) and (dig14 = CNPJ[14])) then
@@ -2552,21 +2786,23 @@ THCIAwsSecManCli.URLServicoBuscaFaturas :=
 THCIAwsSecManCli.URLServicoPixLicenseCost :=
   'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
 
-THCIAwsSecManCli.URLServicoPixCreate :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-
-THCIAwsSecManCli.URLServicoPixGet :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-
-// THCIAwsSecManCli.URLServicoPixGet :=
-// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-
-
 // THCIAwsSecManCli.URLServicoPixCreate :=
 // 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+//
+// THCIAwsSecManCli.URLServicoPixGet :=
+// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+//
+// THCIAwsSecManCli.URLServicoPixCancel :=
+// 'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
+//
 
+THCIAwsSecManCli.URLServicoPixCreate :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
-// THCIAwsSecManCli.URLServicoPixLicenseCost :=
-// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
+THCIAwsSecManCli.URLServicoPixGet :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+THCIAwsSecManCli.URLServicoPixCancel :=
+  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
 
 end.
