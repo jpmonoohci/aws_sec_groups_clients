@@ -158,6 +158,11 @@ $(PostBuildEvent)]]></PostBuildEvent>
             <Form>Login</Form>
             <FormType>dfm</FormType>
         </DCCReference>
+        <DCCReference Include="FrmPix.pas">
+            <Form>FormPix</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
+        <DCCReference Include="TCustomIdHTTPUnit.pas"/>
         <BuildConfiguration Include="Release">
             <Key>Cfg_2</Key>
             <CfgParent>Base</CfgParent>

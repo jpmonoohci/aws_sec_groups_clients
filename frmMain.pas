@@ -9,13 +9,12 @@ uses
   IdBaseComponent, IdComponent, IdCustomTCPServer, IdHTTPServer, Server.Runner,
   Vcl.StdCtrls, IdTCPConnection, IdTCPClient, IdHTTP, IdAuthentication,
   Vcl.ExtCtrls, Vcl.Mask, Registry, System.UITypes, IdHashMessageDigest,
-  System.JSON, Vcl.ComCtrls, IniFiles, Vcl.Imaging.pngimage, Vcl.Imaging.jpeg,
-  ShellApi, IdIOHandler, IdIOHandlerSocket, IdIOHandlerStack, IdSSL,
+  System.JSON, Vcl.ComCtrls, IniFiles, ShellApi, IdIOHandler, IdIOHandlerSocket,
+  IdIOHandlerStack, IdSSL,
   IdSSLOpenSSL, System.Zip, IOUtils, Vcl.Menus, ClipBrd, FrmLogin, Data.DB,
   Vcl.Grids, Vcl.DBGrids, Datasnap.DBClient, Datasnap.Provider,
-  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib, Vcl.Samples.Spin,
-  System.NetEncoding, IdCoder, IdCoder3to4, IdCoderMIME, IdGlobal,
-  Vcl.Image.Base64;
+  System.ImageList, Vcl.ImgList, FileCtrl, MidasLib, Vcl.Samples.Spin, FrmPix,
+  TCustomIdHTTPUnit;
 
 type
   THCIAwsSecManCli = class(TForm)
@@ -81,18 +80,19 @@ type
     ButtonPix: TButton;
     Label9: TLabel;
     LabelValorPix: TLabel;
-    ImageQRCode: TImage;
     PnlLicence: TPanel;
     PnlPix: TPanel;
+    PixDataSource: TDataSource;
+    PixDBGrid: TDBGrid;
     Label10: TLabel;
-    LabelValorPixPagar: TLabel;
-    Label11: TLabel;
-    Label12: TLabel;
-    Label13: TLabel;
-    EditPixCopiaCola: TEdit;
-    ButtonCancelPix: TButton;
-    ButtonPixCopiaCola: TButton;
-    IdDecoderMIME1: TIdDecoderMIME;
+    PixDataSet: TClientDataSet;
+    PixDataSetStatus: TStringField;
+    PixDataSetDtCriacao: TStringField;
+    PixDataSetDtValidade: TStringField;
+    PixDataSetValor: TStringField;
+    PixDataSetQR: TMemoField;
+    PixDataSetPix: TStringField;
+    PixDataSetDescricao: TStringField;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -147,14 +147,15 @@ type
     function CreatePix(Token: String; LicenseCost: Double;
       CustomerDocument: String; CustomerName: String;
       PixDescription: String): Boolean;
-    procedure VerificaPixAPagar();
+    procedure BuscaHistoricoPix();
     procedure PageControl2Change(Sender: TObject);
-    procedure ButtonPixCopiaColaClick(Sender: TObject);
-    procedure LoadQRCode(Base64Str: String);
-    function Base64ToStream(const ABase64Stream: TMemoryStream;
-      var AStream: TMemoryStream): Boolean;
-    function CancelPix(Token: String): Boolean;
-    procedure ButtonCancelPixClick(Sender: TObject);
+    procedure PixDBGridDrawColumnCell(Sender: TObject; const Rect: TRect;
+      DataCol: Integer; Column: TColumn; State: TGridDrawState);
+    function formataDataJSON(Data: String): String;
+    procedure PixDBGridCellClick(Column: TColumn);
+    procedure CarregaFormPix(DtCriacao: String; DtValidade: String;
+      Status: String; Valor: String; Descricao: String; QRCode: String;
+      CopiaECola: String);
 
   private
 
@@ -596,26 +597,19 @@ end;
 procedure THCIAwsSecManCli.PageControl2Change(Sender: TObject);
 begin
   if ((PageControl2.ActivePageIndex = 1)) then
-    VerificaPixAPagar();
-
+    BuscaHistoricoPix();
 end;
 
-procedure THCIAwsSecManCli.VerificaPixAPagar();
+procedure THCIAwsSecManCli.BuscaHistoricoPix();
 begin
 
   Screen.Cursor := crHourglass;
   Application.ProcessMessages;
 
-  if (GetPix(AppToken)) then
-  begin
-    PnlLicence.Visible := false;
-    PnlPix.Visible := true;
-  end
-  else
-  begin
-    PnlLicence.Visible := true;
-    PnlPix.Visible := false;
-  end;
+  SpinEditQtd.Value := 0;
+
+  if not GetPix(AppToken) then
+    GetPix(AppToken);
 
   Screen.Cursor := crDefault;
   Application.ProcessMessages;
@@ -822,6 +816,152 @@ begin
 
 end;
 
+procedure THCIAwsSecManCli.PixDBGridCellClick(Column: TColumn);
+begin
+
+  CarregaFormPix(PixDataSetDtCriacao.AsString, PixDataSetDtValidade.AsString,
+    PixDataSetStatus.AsString, PixDataSetValor.AsString,
+    PixDataSetDescricao.AsString, PixDataSetQR.AsString,
+    PixDataSetPix.AsString);
+
+end;
+
+procedure THCIAwsSecManCli.CarregaFormPix(DtCriacao: String; DtValidade: String;
+  Status: String; Valor: String; Descricao: String; QRCode: String;
+  CopiaECola: String);
+var
+  FormPix: TForm1;
+begin
+
+  FormPix := TForm1.Create(self);
+  FormPix.AppToken := AppToken;
+
+  FormPix.TimeoutConexao := TimeoutConexao;
+  FormPix.TimeoutLeitura := TimeoutLeitura;
+
+  FormPix.DtCriacao := DtCriacao;
+  FormPix.DtValidade := DtValidade;
+  FormPix.Status := Status;
+  FormPix.Valor := Valor;
+  FormPix.Descricao := Descricao;
+  FormPix.QRCode := QRCode;
+  FormPix.CopiaECola := CopiaECola;
+
+  FormPix.ShowModal;
+
+  FormPix.Free;
+
+end;
+
+procedure THCIAwsSecManCli.PixDBGridDrawColumnCell(Sender: TObject;
+  const Rect: TRect; DataCol: Integer; Column: TColumn; State: TGridDrawState);
+
+Var
+  xValue: Variant;
+  Bitmap: TBitmap;
+  fixRect: TRect;
+  bmpWidth: Integer;
+  imgIndex: Integer;
+  vvLargura, vvLeft: Integer;
+begin
+  vvLargura := 25;
+  vvLeft := 1;
+
+  if not odd(PixDBGrid.DataSource.DataSet.RecNo) then // se for ímpar
+  begin
+    if not(gdSelected in State) then // se a célula não está selecionada
+    begin
+      PixDBGrid.Canvas.Brush.Color := $00D2FFFF; // define uma cor de fundo
+    end;
+  end
+  else
+  begin
+    if not(gdSelected in State) then
+    // se a célula não está selecionada
+    begin
+      PixDBGrid.Canvas.Brush.Color := clWhite; // define uma cor de fundo
+    end;
+  end;
+
+  If gdSelected in State Then
+    PixDBGrid.Canvas.Brush.Color := claqua;
+
+  IF (not PixDataSetStatus.AsString.IsEmpty) then
+  begin
+    if PixDataSetStatus.AsString = 'ATIVA' then
+      PixDBGrid.Canvas.Font.Color := clRed
+    Else
+      PixDBGrid.Canvas.Font.Color := clBlack;
+  end
+  else
+    PixDBGrid.Canvas.Font.Color := clBlack;
+
+  if Column.Field.Value = Null then
+  begin
+    if Column.Field.DataType in [FtFloat, ftInteger] then
+      xValue := 0
+    else
+      xValue := ''
+  end
+  else
+    xValue := Column.Field.Value;
+
+  if Column.Field.DataType in [FtFloat, ftInteger] then
+    // xValue := ALLTRIM(formata(strtofloat(xValue), Column.Field.DisplayWidth, Column.Field.Tag))
+  else
+    xValue := Column.Field.AsString;
+
+  PixDBGrid.Canvas.FillRect(Rect);
+
+  fixRect := Rect;
+  if UpperCase(Column.FieldName) = 'BOLETO' then
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      ImageList1.GetBitmap(0, Bitmap);
+      bmpWidth := vvLargura + 4;
+      fixRect.Left := Rect.Left + 10;
+      fixRect.Right := Rect.Left + bmpWidth;
+      if Bitmap <> nil then
+        PixDBGrid.Canvas.StretchDraw(fixRect, Bitmap);
+    finally
+      Bitmap.Free;
+    end;
+    fixRect := Rect;
+    fixRect.Left := fixRect.Left + bmpWidth;
+  end;
+  fixRect := Rect;
+
+  if UpperCase(Column.FieldName) = 'PDF' then
+  begin
+    Bitmap := TBitmap.Create;
+    try
+      ImageList1.GetBitmap(1, Bitmap);
+      bmpWidth := vvLargura;
+      fixRect.Left := Rect.Left + vvLeft;
+      fixRect.Right := Rect.Left + bmpWidth;
+      if Bitmap <> nil then
+        PixDBGrid.Canvas.StretchDraw(fixRect, Bitmap);
+    finally
+      Bitmap.Free;
+    end;
+    fixRect := Rect;
+    fixRect.Left := fixRect.Left + bmpWidth;
+  end;
+
+  if (UpperCase(Column.FieldName) <> 'BOLETO') and
+    (UpperCase(Column.FieldName) <> 'PDF') and
+    (UpperCase(Column.FieldName) <> 'XML') then
+  begin
+    if Column.Field.DataType in [FtFloat, ftInteger] then
+      PixDBGrid.Canvas.textOut(Rect.Right - DBGrid1.Canvas.TextExtent(xValue).cx
+        - 3, Rect.top, xValue)
+    Else
+      PixDBGrid.Canvas.TextRect(Rect, Rect.Left, Rect.top, xValue);
+  end;
+
+end;
+
 procedure THCIAwsSecManCli.ButtonTestarTokenClick(Sender: TObject);
 var
   Token: String;
@@ -873,25 +1013,6 @@ begin
     ButtonAtualizarStatusServer.Enabled := true;
 
   end
-
-end;
-
-procedure THCIAwsSecManCli.ButtonCancelPixClick(Sender: TObject);
-begin
-
-  if (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
-    SpinEditQtd.Value.ToString + ' novo(s) usuário(s)?'), 'Atenção!',
-    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idYes) then
-
-  begin
-
-    if (CancelPix(AppToken)) then
-    begin
-      MessageDlg('PIX cancelado com sucesso.', mtInformation, [mbOk], 0);
-      VerificaPixAPagar();
-    end;
-
-  end;
 
 end;
 
@@ -1187,20 +1308,12 @@ begin
     StatusBar1.Panels[0].Text := 'PIX gerado com sucesso';
     Application.ProcessMessages;
 
-    VerificaPixAPagar();
+    BuscaHistoricoPix();
 
   end;
 
   ButtonPix.Enabled := true;
 
-end;
-
-procedure THCIAwsSecManCli.ButtonPixCopiaColaClick(Sender: TObject);
-begin
-  Clipboard.AsText := EditPixCopiaCola.Text;
-
-  StatusBar1.Panels[0].Text := 'Pix Copia e Cola Copiado para a memória';
-  Application.ProcessMessages;
 end;
 
 procedure THCIAwsSecManCli.ButtonTokenSalvarClick(Sender: TObject);
@@ -2066,107 +2179,6 @@ begin
 
 end;
 
-function THCIAwsSecManCli.Base64ToStream(const ABase64Stream: TMemoryStream;
-  var AStream: TMemoryStream): Boolean;
-var
-  Str: String;
-  bytes: TArray<System.Byte>;
-  Base64Encoding: TBase64Encoding;
-begin
-  Result := false;
-  try
-
-    Base64Encoding := TBase64Encoding.Create();
-    Base64Encoding.Decode(ABase64Stream, AStream);
-    Base64Encoding.Free;
-    Result := true;
-  except
-    on E: Exception do
-      ShowMessage(E.Message);
-  end;
-end;
-
-procedure THCIAwsSecManCli.LoadQRCode(Base64Str: String);
-
-begin
-
-  Base64Str := Base64Str.Replace('data:image/png;base64,', '');
-
-  ImageQRCode.Base64(Base64Str);
-
-end;
-
-function THCIAwsSecManCli.CancelPix(Token: String): Boolean;
-var
-  lURL: String;
-  lResponse: TStringStream;
-  Resposta: String;
-  JSonValue: TJSonValue;
-  JSonPixArray: TJSONArray;
-  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
-  Http: TIdHTTP;
-  Response: String;
-begin
-
-  StatusBar1.Panels[0].Text := 'Aguarde, cancelando PIX';
-  Application.ProcessMessages;
-
-  lResponse := TStringStream.Create('');
-  try
-    try
-      lURL := URLServicoPixCancel + '/' + Token;
-
-      Http := TIdHTTP.Create(nil);
-
-      Http.ConnectTimeout := TimeoutConexao;
-      Http.ReadTimeout := TimeoutLeitura;
-
-      Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
-      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
-      SSLIO.SSLOptions.Method := sslvTLSv1;
-      SSLIO.SSLOptions.Mode := sslmClient;
-      Http.IOHandler := SSLIO;
-
-      Http.Get(lURL, lResponse);
-
-      Resposta := lResponse.DataString;
-
-      JSonValue := TJSonObject.ParseJSONValue(Resposta);
-      Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
-
-      if (Response.equals('true')) then
-        Result := true
-      else
-        Result := false;
-
-      JSonValue.Free;
-
-      Application.ProcessMessages;
-
-    except
-
-      on E: Exception do
-      begin
-
-        StatusBar1.Panels[0].Text := 'Erro cancelando PIX ' + E.Message;
-        Result := false;
-
-      end;
-
-    end;
-
-  finally
-    lResponse.Free();
-
-    Http.Disconnect;
-    FreeAndNil(SSLIO);
-    FreeAndNil(Http);
-
-  end;
-
-end;
-
 function THCIAwsSecManCli.GetPix(Token: String): Boolean;
 var
   lURL: String;
@@ -2174,14 +2186,26 @@ var
   Resposta: String;
   JSonValue: TJSonValue;
   JSonPixArray: TJSONArray;
-  SSLIO: TIdSSLIOHandlerSocketOpenSSL;
-  Http: TIdHTTP;
+  Http: TCustomIdHTTP;
   Custo: String;
   Response: String;
   PixValor: String;
   PixCopiaCola: String;
   PixQRCode: String;
   PixDescricao: String;
+  PixDataValidade: String;
+  PixDataCriacao: String;
+  PixStatus: String;
+
+  PixValorForm: String;
+  PixCopiaColaForm: String;
+  PixQRCodeForm: String;
+  PixDescricaoForm: String;
+  PixDataValidadeForm: String;
+  PixDataCriacaoForm: String;
+  PixStatusForm: String;
+  I: Integer;
+  PixTemAtivo: Boolean;
 begin
 
   StatusBar1.Panels[0].Text := 'Aguarde, buscando informações';
@@ -2192,17 +2216,10 @@ begin
     try
       lURL := URLServicoPixGet + '/' + Token;
 
-      Http := TIdHTTP.Create(nil);
+      Http := TCustomIdHTTP.Create(nil);
 
       Http.ConnectTimeout := TimeoutConexao;
       Http.ReadTimeout := TimeoutLeitura;
-
-      Http.ProtocolVersion := pv1_1;
-      Http.HandleRedirects := true;
-      SSLIO := TIdSSLIOHandlerSocketOpenSSL.Create(nil);
-      SSLIO.SSLOptions.Method := sslvTLSv1;
-      SSLIO.SSLOptions.Mode := sslmClient;
-      Http.IOHandler := SSLIO;
 
       Http.Get(lURL, lResponse);
 
@@ -2211,38 +2228,93 @@ begin
       JSonValue := TJSonObject.ParseJSONValue(Resposta);
       Response := (JSonValue as TJSonObject).Get('response').JSonValue.Value;
 
+      PixTemAtivo := false;
+
       if (Response.equals('true')) then
       begin
+
+        PixDataSet.EmptyDataSet;
 
         JSonValue := (JSonValue as TJSonObject).Get('pix').JSonValue;
         JSonPixArray := JSonValue as TJSONArray;
 
-        if (JSonPixArray.Size > 0) then
+        for I := 0 to JSonPixArray.Size - 1 do
+
         begin
-          PixValor := (JSonPixArray.Get(0) as TJSonObject).Get('pix_valor')
+
+          PixDataSet.Append;
+
+          PixValor := (JSonPixArray.Get(I) as TJSonObject).Get('pix_valor')
             .JSonValue.Value;
 
-          LabelValorPixPagar.Caption := 'R$ ' + PixValor;
+          PixDataSetValor.AsFloat := StrToFloat(PixValor.Replace('.', ','));
 
-          PixQRCode := (JSonPixArray.Get(0) as TJSonObject).Get('pix_qrcodeb64')
+          PixQRCode := (JSonPixArray.Get(I) as TJSonObject).Get('pix_qrcodeb64')
             .JSonValue.Value;
 
-          LoadQRCode(PixQRCode);
+          PixDataSetQR.AsString := PixQRCode;
 
-          PixCopiaCola := (JSonPixArray.Get(0) as TJSonObject)
+          PixCopiaCola := (JSonPixArray.Get(I) as TJSonObject)
             .Get('pix_txt_qrcode').JSonValue.Value;
 
-          EditPixCopiaCola.Text := PixCopiaCola;
+          PixDataSetPix.AsString := PixCopiaCola;
 
-          PixDescricao := (JSonPixArray.Get(0) as TJSonObject)
+          PixDescricao := (JSonPixArray.Get(I) as TJSonObject)
             .Get('pix_descricao').JSonValue.Value;
 
-          StatusBar1.Panels[0].Text := 'PIX aguardando pagamento';
-          Application.ProcessMessages;
+          PixDataSetDescricao.AsString := PixDescricao;
+
+          PixDataCriacao := (JSonPixArray.Get(I) as TJSonObject)
+            .Get('pix_dt_criacao').JSonValue.Value;
+
+          PixDataSetDtCriacao.AsString := formataDataJSON(PixDataCriacao);
+
+          PixDataValidade := (JSonPixArray.Get(I) as TJSonObject)
+            .Get('pix_dt_expiracao').JSonValue.Value;
+
+          PixDataSetDtValidade.AsString := formataDataJSON(PixDataValidade);
+
+          PixStatus := (JSonPixArray.Get(I) as TJSonObject).Get('pix_status')
+            .JSonValue.Value;
+
+          PixDataSetStatus.AsString := PixStatus;
+
+          if ((I = 0) and (PixStatus = 'ATIVA')) then
+          begin
+
+            PixTemAtivo := true;
+
+            PixValorForm := PixValor;
+            PixCopiaColaForm := PixCopiaCola;
+            PixQRCodeForm := PixQRCode;
+            PixDescricaoForm := PixDescricao;
+            PixDataValidadeForm := formataDataJSON(PixDataValidade);
+            PixDataCriacaoForm := formataDataJSON(PixDataCriacao);
+            PixStatusForm := PixStatus;
+
+          end;
+
+          PixDataSet.Post;
 
         end;
 
-        Result := true;
+        PixDataSet.First;
+
+        StatusBar1.Panels[0].Text := 'Transações pix carregadas';
+        Application.ProcessMessages;
+
+        if (PixTemAtivo) then
+
+        begin
+
+          CarregaFormPix(PixDataCriacaoForm, PixDataValidadeForm, PixStatusForm,
+            PixValorForm, PixDescricaoForm, PixQRCodeForm, PixCopiaColaForm);
+
+          Result := false;
+
+        end
+        else
+          Result := true;
 
       end
       else
@@ -2267,7 +2339,6 @@ begin
     lResponse.Free();
 
     Http.Disconnect;
-    FreeAndNil(SSLIO);
     FreeAndNil(Http);
 
   end;
@@ -2618,9 +2689,11 @@ begin
 
   if not odd(DBGrid1.DataSource.DataSet.RecNo) then // se for ímpar
   begin
-    if not(gdSelected in State) then // se a célula não está selecionada
+    if not(gdSelected in State) then
+    // se a célula não está selecionada
     begin
-      DBGrid1.Canvas.Brush.Color := $00D2FFFF; // define uma cor de fundo
+      DBGrid1.Canvas.Brush.Color := $00D2FFFF;
+      // define uma cor de fundo
     end;
   end
   else
@@ -2628,7 +2701,8 @@ begin
     if not(gdSelected in State) then
     // se a célula não está selecionada
     begin
-      DBGrid1.Canvas.Brush.Color := clWhite; // define uma cor de fundo
+      DBGrid1.Canvas.Brush.Color := clWhite;
+      // define uma cor de fundo
     end;
   end;
 
@@ -2741,6 +2815,22 @@ begin
   end;
 end;
 
+function THCIAwsSecManCli.formataDataJSON(Data: String): String;
+var
+  dataFormatada: String;
+begin
+
+  dataFormatada := '';
+
+  dataFormatada := Copy(Data, 9, 2);
+  dataFormatada := dataFormatada + '/' + Copy(Data, 6, 2);
+  dataFormatada := dataFormatada + '/' + Copy(Data, 1, 4);
+  // dataFormatada := dataFormatada + ' ' + Copy(Data, 12, 3);
+  // dataFormatada := dataFormatada + ' ' + Copy(Data, 15, 2);
+  Result := dataFormatada;
+
+end;
+
 initialization
 
 THCIAwsSecManCli.AppVersion := '9';
@@ -2791,18 +2881,11 @@ THCIAwsSecManCli.URLServicoPixLicenseCost :=
 //
 // THCIAwsSecManCli.URLServicoPixGet :=
 // 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-//
-// THCIAwsSecManCli.URLServicoPixCancel :=
-// 'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
-//
 
 THCIAwsSecManCli.URLServicoPixCreate :=
   'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
 THCIAwsSecManCli.URLServicoPixGet :=
   'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-
-THCIAwsSecManCli.URLServicoPixCancel :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
 
 end.

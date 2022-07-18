@@ -11626,7 +11626,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
       Caption = 'Login'
-      ExplicitHeight = 269
       object Image1: TImage
         Left = 307
         Top = 3
@@ -23284,7 +23283,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet2: TTabSheet
       Caption = 'Usu'#225'rios'
       ImageIndex = 1
-      ExplicitHeight = 269
       object ListBoxUser: TListBox
         Left = 21
         Top = 18
@@ -23318,7 +23316,6 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet3: TTabSheet
       Caption = 'Configura'#231#227'o'
       ImageIndex = 2
-      ExplicitHeight = 269
       object Label2: TLabel
         Left = 16
         Top = 150
@@ -23425,11 +23422,10 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object TabSheet4: TTabSheet
       Caption = 'Financeiro'
       ImageIndex = 3
-      ExplicitHeight = 250
       object PageControl2: TPageControl
         Left = -1
-        Top = 0
-        Width = 602
+        Top = -4
+        Width = 343
         Height = 229
         ActivePage = TabServicos
         TabOrder = 0
@@ -23466,6 +23462,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
             Width = 326
             Height = 114
             DataSource = FaturasDataSource
+            ReadOnly = True
             TabOrder = 1
             TitleFont.Charset = DEFAULT_CHARSET
             TitleFont.Color = clWindowText
@@ -23477,39 +23474,38 @@ object HCIAwsSecManCli: THCIAwsSecManCli
           end
         end
         object TabServicos: TTabSheet
-          Caption = 'Servi'#231'os'
+          Caption = 'Novas Licen'#231'as'
           ImageIndex = 1
           object PnlLicence: TPanel
             Left = 0
-            Top = 0
+            Top = 11
             Width = 339
-            Height = 198
+            Height = 54
             TabOrder = 0
-            Visible = False
             object Label7: TLabel
               Left = 42
-              Top = 29
+              Top = 0
               Width = 240
               Height = 13
               Caption = 'Voc'#234' pode adquirir licen'#231'as de usu'#225'rios adicionais:'
             end
             object Label9: TLabel
-              Left = 190
-              Top = 60
+              Left = 127
+              Top = 24
               Width = 28
               Height = 13
               Caption = 'Valor:'
             end
             object Label8: TLabel
-              Left = 42
-              Top = 53
+              Left = 10
+              Top = 19
               Width = 56
               Height = 26
               Caption = 'Quantidade'#13#10'de licen'#231'as:'
             end
             object LabelValorPix: TLabel
-              Left = 224
-              Top = 60
+              Left = 161
+              Top = 26
               Width = 42
               Height = 13
               Caption = 'R$ 0,00'
@@ -23521,8 +23517,8 @@ object HCIAwsSecManCli: THCIAwsSecManCli
               ParentFont = False
             end
             object ButtonPix: TButton
-              Left = 119
-              Top = 110
+              Left = 225
+              Top = 19
               Width = 99
               Height = 25
               Caption = 'Pagar via PIX'
@@ -23531,8 +23527,8 @@ object HCIAwsSecManCli: THCIAwsSecManCli
               OnClick = ButtonPixClick
             end
             object SpinEditQtd: TSpinEdit
-              Left = 104
-              Top = 61
+              Left = 72
+              Top = 23
               Width = 49
               Height = 22
               MaxValue = 99
@@ -23544,84 +23540,34 @@ object HCIAwsSecManCli: THCIAwsSecManCli
           end
           object PnlPix: TPanel
             Left = 0
-            Top = 0
+            Top = 79
             Width = 339
-            Height = 198
+            Height = 119
+            Locked = True
             TabOrder = 1
-            Visible = False
-            object ImageQRCode: TImage
-              Left = 203
-              Top = 8
-              Width = 126
-              Height = 122
-              Proportional = True
-            end
             object Label10: TLabel
+              Left = 0
+              Top = 0
+              Width = 313
+              Height = 13
+              Caption = 'Abaixo est'#227'o suas transa'#231#245'es PIX. Clique para mais informa'#231#245'es.'
+            end
+            object PixDBGrid: TDBGrid
               Left = 3
-              Top = 64
-              Width = 85
-              Height = 13
-              Caption = 'Valor a ser pago: '
-            end
-            object LabelValorPixPagar: TLabel
-              Left = 94
-              Top = 66
-              Width = 42
-              Height = 13
-              Caption = 'R$ 0,00'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -11
-              Font.Name = 'Tahoma'
-              Font.Style = [fsBold]
-              ParentFont = False
-            end
-            object Label11: TLabel
-              Left = 3
-              Top = 119
-              Width = 79
-              Height = 13
-              Caption = 'PIX Copia e Cola'
-            end
-            object Label12: TLabel
-              Left = 5
-              Top = 8
-              Width = 192
-              Height = 13
-              Caption = 'Efetue o pagamento do PIX utilizando o '
-            end
-            object Label13: TLabel
-              Left = 5
-              Top = 27
-              Width = 187
-              Height = 13
-              Caption = 'QR Code ao lado ou o PIX Copia e Cola'
-            end
-            object EditPixCopiaCola: TEdit
-              Left = 3
-              Top = 138
-              Width = 326
-              Height = 21
+              Top = 19
+              Width = 334
+              Height = 97
+              DataSource = PixDataSource
+              Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
               ReadOnly = True
               TabOrder = 0
-            end
-            object ButtonCancelPix: TButton
-              Left = 224
-              Top = 165
-              Width = 105
-              Height = 25
-              Caption = 'Cancelar PIX'
-              TabOrder = 1
-              OnClick = ButtonCancelPixClick
-            end
-            object ButtonPixCopiaCola: TButton
-              Left = 88
-              Top = 110
-              Width = 75
-              Height = 25
-              Caption = 'Copiar'
-              TabOrder = 2
-              OnClick = ButtonPixCopiaColaClick
+              TitleFont.Charset = DEFAULT_CHARSET
+              TitleFont.Color = clWindowText
+              TitleFont.Height = -11
+              TitleFont.Name = 'Tahoma'
+              TitleFont.Style = []
+              OnCellClick = PixDBGridCellClick
+              OnDrawColumnCell = PixDBGridDrawColumnCell
             end
           end
         end
@@ -23766,7 +23712,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 232
     Top = 280
     Bitmap = {
-      494C0101030008004C0030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800500030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -24961,9 +24907,97 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       FFFFFFFFFFFFFFFFFFFF00000000000000000000000000000000000000000000
       000000000000}
   end
-  object IdDecoderMIME1: TIdDecoderMIME
-    FillChar = '='
-    Left = 152
+  object PixDataSource: TDataSource
+    DataSet = PixDataSet
+    Left = 272
     Top = 280
+  end
+  object PixDataSet: TClientDataSet
+    PersistDataPacket.Data = {
+      E00000009619E0BD010000001800000007000000000003000000E00006537461
+      7475730100490000000100055749445448020002006400094474437269616361
+      6F01004900000001000557494454480200020064000A447456616C6964616465
+      01004900000001000557494454480200020064000556616C6F72010049000000
+      010005574944544802000200640002515204004B000000010007535542545950
+      4502004900050054657874000350697802004900000001000557494454480200
+      0200E8030944657363726963616F010049000000010005574944544802000200
+      64000000}
+    Active = True
+    Aggregates = <>
+    FieldDefs = <
+      item
+        Name = 'Status'
+        DataType = ftString
+        Size = 100
+      end
+      item
+        Name = 'DtCriacao'
+        DataType = ftString
+        Size = 100
+      end
+      item
+        Name = 'DtValidade'
+        DataType = ftString
+        Size = 100
+      end
+      item
+        Name = 'Valor'
+        DataType = ftString
+        Size = 100
+      end
+      item
+        Name = 'QR'
+        DataType = ftMemo
+      end
+      item
+        Name = 'Pix'
+        DataType = ftString
+        Size = 1000
+      end
+      item
+        Name = 'Descricao'
+        DataType = ftString
+        Size = 100
+      end>
+    IndexDefs = <>
+    Params = <>
+    StoreDefs = True
+    Left = 304
+    Top = 280
+    object PixDataSetStatus: TStringField
+      DisplayWidth = 7
+      FieldName = 'Status'
+      Size = 100
+    end
+    object PixDataSetDtCriacao: TStringField
+      DisplayWidth = 10
+      FieldName = 'DtCriacao'
+      Size = 100
+    end
+    object PixDataSetDtValidade: TStringField
+      DisplayWidth = 10
+      FieldName = 'DtValidade'
+      Size = 100
+    end
+    object PixDataSetValor: TStringField
+      DisplayWidth = 8
+      FieldName = 'Valor'
+      Size = 100
+    end
+    object PixDataSetQR: TMemoField
+      FieldName = 'QR'
+      Visible = False
+      BlobType = ftMemo
+    end
+    object PixDataSetPix: TStringField
+      FieldName = 'Pix'
+      Visible = False
+      Size = 1000
+    end
+    object PixDataSetDescricao: TStringField
+      DisplayWidth = 200
+      FieldName = 'Descricao'
+      Size = 100
+    end
   end
 end
