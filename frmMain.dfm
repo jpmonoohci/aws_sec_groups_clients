@@ -23426,12 +23426,13 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         Left = -1
         Top = -4
         Width = 343
-        Height = 229
+        Height = 230
         ActivePage = TabServicos
         TabOrder = 0
         OnChange = PageControl2Change
         object TabFaturas: TTabSheet
           Caption = 'Faturas'
+          ExplicitHeight = 201
           object Label5: TLabel
             Left = 3
             Top = 16
@@ -23476,22 +23477,23 @@ object HCIAwsSecManCli: THCIAwsSecManCli
         object TabServicos: TTabSheet
           Caption = 'Novas Licen'#231'as'
           ImageIndex = 1
+          ExplicitHeight = 200
           object PnlLicence: TPanel
             Left = 0
-            Top = 11
+            Top = 0
             Width = 339
             Height = 54
             TabOrder = 0
             object Label7: TLabel
               Left = 42
-              Top = 0
+              Top = -1
               Width = 240
               Height = 13
               Caption = 'Voc'#234' pode adquirir licen'#231'as de usu'#225'rios adicionais:'
             end
             object Label9: TLabel
               Left = 127
-              Top = 24
+              Top = 26
               Width = 28
               Height = 13
               Caption = 'Valor:'
@@ -23540,22 +23542,22 @@ object HCIAwsSecManCli: THCIAwsSecManCli
           end
           object PnlPix: TPanel
             Left = 0
-            Top = 79
+            Top = 62
             Width = 339
-            Height = 119
+            Height = 142
             Locked = True
             TabOrder = 1
             object Label10: TLabel
-              Left = 0
+              Left = 12
               Top = 0
               Width = 313
               Height = 13
               Caption = 'Abaixo est'#227'o suas transa'#231#245'es PIX. Clique para mais informa'#231#245'es.'
             end
             object PixDBGrid: TDBGrid
-              Left = 3
-              Top = 19
-              Width = 334
+              Left = 0
+              Top = 18
+              Width = 337
               Height = 97
               DataSource = PixDataSource
               Options = [dgTitles, dgIndicator, dgColumnResize, dgColLines, dgRowLines, dgTabs, dgRowSelect, dgConfirmDelete, dgCancelOnExit, dgTitleClick, dgTitleHotTrack]
@@ -23569,12 +23571,21 @@ object HCIAwsSecManCli: THCIAwsSecManCli
               OnCellClick = PixDBGridCellClick
               OnDrawColumnCell = PixDBGridDrawColumnCell
             end
+            object BtnAtualizarGrid: TButton
+              Left = 260
+              Top = 115
+              Width = 75
+              Height = 25
+              Caption = 'Atualizar'
+              TabOrder = 1
+              OnClick = BtnAtualizarGridClick
+            end
           end
         end
       end
       object ButtonLogoffFinanceiro: TButton
         Left = 228
-        Top = 231
+        Top = 230
         Width = 114
         Height = 25
         Caption = 'Fechar financeiro'
@@ -23712,7 +23723,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Left = 232
     Top = 280
     Bitmap = {
-      494C010103000800500030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
+      494C010103000800540030003000FFFFFFFF2110FFFFFFFFFFFFFFFF424D3600
       0000000000003600000028000000C00000003000000001002000000000000090
       0000000000000000000000000000000000000000000000000000000000000000
       0000000000000000000000000000000000000000000000000000000000000000
@@ -24914,14 +24925,14 @@ object HCIAwsSecManCli: THCIAwsSecManCli
   end
   object PixDataSet: TClientDataSet
     PersistDataPacket.Data = {
-      E00000009619E0BD010000001800000007000000000003000000E00006537461
+      F90000009619E0BD010000001800000008000000000003000000F90006537461
       7475730100490000000100055749445448020002006400094474437269616361
       6F01004900000001000557494454480200020064000A447456616C6964616465
       01004900000001000557494454480200020064000556616C6F72010049000000
       010005574944544802000200640002515204004B000000010007535542545950
       4502004900050054657874000350697802004900000001000557494454480200
       0200E8030944657363726963616F010049000000010005574944544802000200
-      64000000}
+      6400045478496401004900000001000557494454480200020064000000}
     Active = True
     Aggregates = <>
     FieldDefs = <
@@ -24956,6 +24967,11 @@ object HCIAwsSecManCli: THCIAwsSecManCli
       end
       item
         Name = 'Descricao'
+        DataType = ftString
+        Size = 100
+      end
+      item
+        Name = 'TxId'
         DataType = ftString
         Size = 100
       end>
@@ -24997,6 +25013,11 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     object PixDataSetDescricao: TStringField
       DisplayWidth = 200
       FieldName = 'Descricao'
+      Size = 100
+    end
+    object PixDataSetTxId: TStringField
+      FieldName = 'TxId'
+      Visible = False
       Size = 100
     end
   end

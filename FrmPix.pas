@@ -53,6 +53,8 @@ type
     class var Descricao: String;
     class var QRCode: String;
     class var CopiaECola: String;
+    class var PixTxId: String;
+    class var OcultaBotaoCancelar: Boolean;
 
     { Public declarations }
   end;
@@ -114,7 +116,7 @@ begin
   lResponse := TStringStream.Create('');
   try
     try
-      lURL := URLServicoPixCancel + '/' + Token;
+      lURL := URLServicoPixCancel + '/' + Token + '/pixtxid/' + PixTxId;
 
       Http := TCustomIdHTTP.Create(nil);
 
@@ -206,13 +208,17 @@ begin
 
   end;
 
+  if (OcultaBotaoCancelar) then
+    BtnCancelarPIX.Visible := false;
+
 end;
 
 initialization
 
-TForm1.URLServicoPixCancel :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
+// TForm1.URLServicoPixCancel :=
+// 'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
 
-// TForm1.URLServicoPixCancel := 'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
+TForm1.URLServicoPixCancel :=
+  'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/cancel/token';
 
 end.

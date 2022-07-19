@@ -60,12 +60,12 @@ var
   senha: string;
 begin
 
-  if (DebugHook <> 0) then
-  begin
-    self.Close;
-    self.ModalResult := mrOk;
-    exit;
-  end;
+//  if (DebugHook <> 0) then
+//  begin
+//    self.Close;
+//    self.ModalResult := mrOk;
+//    exit;
+//  end;
 
   if (not ValidarEmail(EditEmail.Text)) then
   begin

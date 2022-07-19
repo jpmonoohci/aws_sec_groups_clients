@@ -40,9 +40,9 @@ object Form1: TForm1
   object Label2: TLabel
     Left = 23
     Top = 8
-    Width = 40
+    Width = 96
     Height = 13
-    Caption = 'Status:'
+    Caption = 'Status Cobran'#231'a:'
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
     Font.Height = -11
@@ -93,7 +93,7 @@ object Form1: TForm1
     Left = 23
     Top = 131
     Width = 96
-    Height = 22
+    Height = 13
     Caption = 'PIX Copia e Cola: '
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clWindowText
@@ -103,28 +103,28 @@ object Form1: TForm1
     ParentFont = False
   end
   object LblStatus: TLabel
-    Left = 117
+    Left = 133
     Top = 8
     Width = 44
     Height = 13
     Caption = 'LblStatus'
   end
   object LblDtCriacao: TLabel
-    Left = 117
+    Left = 133
     Top = 30
     Width = 60
     Height = 13
     Caption = 'LblDtCriacao'
   end
   object LblDtValidade: TLabel
-    Left = 117
+    Left = 133
     Top = 52
     Width = 64
     Height = 13
     Caption = 'LblDtValidade'
   end
   object LblValor: TLabel
-    Left = 117
+    Left = 133
     Top = 74
     Width = 37
     Height = 13

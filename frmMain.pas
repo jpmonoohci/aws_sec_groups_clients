@@ -93,6 +93,8 @@ type
     PixDataSetQR: TMemoField;
     PixDataSetPix: TStringField;
     PixDataSetDescricao: TStringField;
+    PixDataSetTxId: TStringField;
+    BtnAtualizarGrid: TButton;
 
     procedure FormCreate(ASender: TObject);
     function GetUpdateVersion(): string;
@@ -143,11 +145,11 @@ type
     procedure SpinEditQtdChange(Sender: TObject);
     function GetLicensesCosts(Token: String; Amount: Integer): String;
     procedure ButtonPixClick(Sender: TObject);
-    function GetPix(Token: String): Boolean;
+    function GetPix(Token: String; MostraPix: Boolean): Boolean;
     function CreatePix(Token: String; LicenseCost: Double;
       CustomerDocument: String; CustomerName: String;
       PixDescription: String): Boolean;
-    procedure BuscaHistoricoPix();
+    procedure BuscaHistoricoPix(MostraPix: Boolean);
     procedure PageControl2Change(Sender: TObject);
     procedure PixDBGridDrawColumnCell(Sender: TObject; const Rect: TRect;
       DataCol: Integer; Column: TColumn; State: TGridDrawState);
@@ -155,7 +157,8 @@ type
     procedure PixDBGridCellClick(Column: TColumn);
     procedure CarregaFormPix(DtCriacao: String; DtValidade: String;
       Status: String; Valor: String; Descricao: String; QRCode: String;
-      CopiaECola: String);
+      CopiaECola: String; PixTxId: String; OcultaBotaoCancelar: Boolean);
+    procedure BtnAtualizarGridClick(Sender: TObject);
 
   private
 
@@ -597,10 +600,15 @@ end;
 procedure THCIAwsSecManCli.PageControl2Change(Sender: TObject);
 begin
   if ((PageControl2.ActivePageIndex = 1)) then
-    BuscaHistoricoPix();
+    BuscaHistoricoPix(false);
 end;
 
-procedure THCIAwsSecManCli.BuscaHistoricoPix();
+procedure THCIAwsSecManCli.BtnAtualizarGridClick(Sender: TObject);
+begin
+  BuscaHistoricoPix(False);
+end;
+
+procedure THCIAwsSecManCli.BuscaHistoricoPix(MostraPix: Boolean);
 begin
 
   Screen.Cursor := crHourglass;
@@ -608,8 +616,7 @@ begin
 
   SpinEditQtd.Value := 0;
 
-  if not GetPix(AppToken) then
-    GetPix(AppToken);
+  GetPix(AppToken, MostraPix);
 
   Screen.Cursor := crDefault;
   Application.ProcessMessages;
@@ -821,14 +828,16 @@ begin
 
   CarregaFormPix(PixDataSetDtCriacao.AsString, PixDataSetDtValidade.AsString,
     PixDataSetStatus.AsString, PixDataSetValor.AsString,
-    PixDataSetDescricao.AsString, PixDataSetQR.AsString,
-    PixDataSetPix.AsString);
+    PixDataSetDescricao.AsString, PixDataSetQR.AsString, PixDataSetPix.AsString,
+    PixDataSetTxId.AsString, false);
+
+  BuscaHistoricoPix(false);
 
 end;
 
 procedure THCIAwsSecManCli.CarregaFormPix(DtCriacao: String; DtValidade: String;
   Status: String; Valor: String; Descricao: String; QRCode: String;
-  CopiaECola: String);
+  CopiaECola: String; PixTxId: String; OcultaBotaoCancelar: Boolean);
 var
   FormPix: TForm1;
 begin
@@ -846,6 +855,8 @@ begin
   FormPix.Descricao := Descricao;
   FormPix.QRCode := QRCode;
   FormPix.CopiaECola := CopiaECola;
+  FormPix.PixTxId := PixTxId;
+  FormPix.OcultaBotaoCancelar := OcultaBotaoCancelar;
 
   FormPix.ShowModal;
 
@@ -1288,31 +1299,32 @@ begin
 
   ButtonPix.Enabled := false;
 
-  if ((CustoLicencasPix = 0) or
-    (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
+  if (CustoLicencasPix = 0) then
+  begin
+    Exit();
+  end;
+
+  if (Application.MessageBox(PChar('Deseja realmente efetuar a aquisição de ' +
     SpinEditQtd.Value.ToString + ' novo(s) usuário(s)?'), 'Atenção!',
-    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo)) then
+    mb_IconQuestion + MB_DEFBUTTON2 + mb_YesNo) = idNo) then
   begin
     ButtonPix.Enabled := true;
     Exit();
   end;
 
-
-  // CreatePix(AppToken, CustoLicencasPix, CNPJCliente, NomeCliente,
-  // 'Aquisição de ' + SpinEditQtd.Value.ToString + ' licencas HCI');
-
-  if (CreatePix(AppToken, CustoLicencasPix, '10511437803', 'Joao Pedro Monoo',
+  if (CreatePix(AppToken, CustoLicencasPix, CNPJCliente, NomeCliente,
     'Aquisicao de ' + SpinEditQtd.Value.ToString + ' licencas HCI')) then
   begin
 
     StatusBar1.Panels[0].Text := 'PIX gerado com sucesso';
     Application.ProcessMessages;
 
-    BuscaHistoricoPix();
+    SpinEditQtd.Value := 0;
+    BuscaHistoricoPix(true);
+
+    Exit();
 
   end;
-
-  ButtonPix.Enabled := true;
 
 end;
 
@@ -1935,12 +1947,14 @@ begin
 
   if (not Custo.IsEmpty) then
   begin
-
     CustoLicencasPix := StrToFloat(Custo);
-
     ButtonPix.Enabled := true;
-
     LabelValorPix.Caption := FormatFloat('R$ #,##0.00', CustoLicencasPix);
+  end
+  else
+  begin
+    ButtonPix.Enabled := false;
+    SpinEditQtd.Value := 0;
   end;
 
 end;
@@ -2066,7 +2080,7 @@ begin
 
         StatusBar1.Panels[0].Text := 'Erro calculando custo de licença ' +
           E.Message;
-        Result := '0,00';
+        Result := '';
 
       end;
 
@@ -2162,6 +2176,7 @@ begin
 
         StatusBar1.Panels[0].Text := 'Erro gerando pix ' + E.Message;
         Result := false;
+        ButtonPix.Enabled := true;
         Screen.Cursor := crDefault;
 
       end;
@@ -2179,7 +2194,7 @@ begin
 
 end;
 
-function THCIAwsSecManCli.GetPix(Token: String): Boolean;
+function THCIAwsSecManCli.GetPix(Token: String; MostraPix: Boolean): Boolean;
 var
   lURL: String;
   lResponse: TStringStream;
@@ -2196,6 +2211,7 @@ var
   PixDataValidade: String;
   PixDataCriacao: String;
   PixStatus: String;
+  PixTxId: String;
 
   PixValorForm: String;
   PixCopiaColaForm: String;
@@ -2204,6 +2220,7 @@ var
   PixDataValidadeForm: String;
   PixDataCriacaoForm: String;
   PixStatusForm: String;
+  PixTxIdForm: String;
   I: Integer;
   PixTemAtivo: Boolean;
 begin
@@ -2279,6 +2296,11 @@ begin
 
           PixDataSetStatus.AsString := PixStatus;
 
+          PixTxId := (JSonPixArray.Get(I) as TJSonObject).Get('pix_txid')
+            .JSonValue.Value;
+
+          PixDataSetTxId.AsString := PixTxId;
+
           if ((I = 0) and (PixStatus = 'ATIVA')) then
           begin
 
@@ -2291,6 +2313,7 @@ begin
             PixDataValidadeForm := formataDataJSON(PixDataValidade);
             PixDataCriacaoForm := formataDataJSON(PixDataCriacao);
             PixStatusForm := PixStatus;
+            PixTxIdForm := PixTxId;
 
           end;
 
@@ -2303,12 +2326,13 @@ begin
         StatusBar1.Panels[0].Text := 'Transações pix carregadas';
         Application.ProcessMessages;
 
-        if (PixTemAtivo) then
+        if ((PixTemAtivo) and (MostraPix)) then
 
         begin
 
           CarregaFormPix(PixDataCriacaoForm, PixDataValidadeForm, PixStatusForm,
-            PixValorForm, PixDescricaoForm, PixQRCodeForm, PixCopiaColaForm);
+            PixValorForm, PixDescricaoForm, PixQRCodeForm, PixCopiaColaForm,
+            PixTxIdForm, true);
 
           Result := false;
 
@@ -2329,7 +2353,7 @@ begin
       on E: Exception do
       begin
 
-        StatusBar1.Panels[0].Text := 'Erro ligando Servidor ' + E.Message;
+        StatusBar1.Panels[0].Text := 'Erro buscando Pix ' + E.Message;
 
       end;
 
@@ -2874,18 +2898,18 @@ THCIAwsSecManCli.URLServicoBuscaFaturas :=
   'http://servicos.hci.com.br/chamados/datasnap/rest/TConta/ListarContasEmAberto?ddd=81&numero=96302385&cnpj=';
 
 THCIAwsSecManCli.URLServicoPixLicenseCost :=
-  'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
-
-// THCIAwsSecManCli.URLServicoPixCreate :=
-// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
-//
-// THCIAwsSecManCli.URLServicoPixGet :=
-// 'https://awssecman.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+  'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/licensecost/token';
 
 THCIAwsSecManCli.URLServicoPixCreate :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+  'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
 THCIAwsSecManCli.URLServicoPixGet :=
-  'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+  'https://awssecman-scheduler.hci.app.br/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+
+// THCIAwsSecManCli.URLServicoPixCreate :=
+// 'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
+//
+// THCIAwsSecManCli.URLServicoPixGet :=
+// 'http://10.191.253.39:8080/Vkp6d1szSnRgPmcqaih3UyFTLiE9VV43YzVqSF1Icn0/pix/token';
 
 end.
