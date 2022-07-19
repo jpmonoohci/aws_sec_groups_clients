@@ -980,7 +980,7 @@ begin
 
   Token := LeIni('Config', 'Token');
 
-  if (Token.Trim.IsEmpty) then
+  if (Token.Trim.Equals('error')) then
   begin
     MessageDlg('Digite o Token e clique em Salvar.', mtError, [mbOk], 0);
     Exit();

@@ -11621,7 +11621,7 @@ object HCIAwsSecManCli: THCIAwsSecManCli
     Top = 0
     Width = 353
     Height = 284
-    ActivePage = TabSheet4
+    ActivePage = TabSheet3
     TabOrder = 3
     OnChange = PageControl1Change
     object TabSheet1: TTabSheet
